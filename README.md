@@ -26,10 +26,9 @@ Usage of ./esptrans:
     	 (default "INFO")
   -favorites-dburl string
     	Favorites DB URL (default "file:///.../favorites.db" (in local directory))
-  -i string
-    	Input language specification (default "es")
   -libre-translate-url string
     	Libre Translate URL (default "http://localhost:6001")
+  -n	Do not save to favorites
   -r	Translate es=>en. Default is inverse (en=>es).
   -v	Verbose output
 ```
