@@ -1,10 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"esptrans/pkg/config"
 	"esptrans/pkg/favorites"
 	"esptrans/pkg/libre_translate"
-	"esptrans/pkg/pkg/translate"
+	"esptrans/pkg/translate"
 	"flag"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -89,11 +90,21 @@ func main() {
 	opts := &translate.TranslateOptions{
 		InLang:  app.inLang,
 		OutLang: app.outLang,
-		Verbose: app.verbose,
 		DB:      app.db,
 		LT:      app.lt,
 	}
-	if err = translate.Translate(opts, sdata); err != nil {
+	res, err := translate.Translate(opts, sdata)
+	if err != nil {
 		logrus.WithError(err).Fatal("Failed to translate")
+		return
+	}
+	if app.verbose {
+		jd, err := json.MarshalIndent(res, "", "  ")
+		if err != nil {
+			logrus.WithError(err).Fatal("Failed to marshal JSON")
+		}
+		fmt.Println(string(jd))
+	} else {
+		fmt.Println(res.TranslatedText)
 	}
 }

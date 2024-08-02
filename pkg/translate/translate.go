@@ -1,7 +1,6 @@
 package translate
 
 import (
-	"encoding/json"
 	"esptrans/pkg/favorites"
 	"esptrans/pkg/libre_translate"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 type TranslateOptions struct {
 	InLang  string
 	OutLang string
-	Verbose bool
 	DB      *favorites.DBService
 	LT      *libre_translate.LTClient
 }
@@ -59,25 +57,19 @@ func saveFavorite(opts *TranslateOptions, source string, res *libre_translate.Re
 }
 
 // Translate calls the LibreTranslate wrapper and saves to favorites
-func Translate(opts *TranslateOptions, sdata string) error {
+func Translate(opts *TranslateOptions, sdata string) (*libre_translate.Response, error) {
 	if len(sdata) == 0 {
-		return fmt.Errorf("empty string")
+		return nil, fmt.Errorf("empty string")
 	}
 	sdata = canonicalizeString(sdata)
 
 	res, err := opts.LT.Translate(sdata, opts.InLang, opts.OutLang)
 	if err != nil {
-		return fmt.Errorf("Failed to translate: %w", err)
-	}
-	if opts.Verbose {
-		jd, err := json.MarshalIndent(res, "", "  ")
-		if err != nil {
-			return fmt.Errorf("Failed to marshal JSON: %w", err)
-		}
-		fmt.Println(string(jd))
-	} else {
-		fmt.Println(res.TranslatedText)
+		return nil, fmt.Errorf("Failed to translate: %w", err)
 	}
 
-	return saveFavorite(opts, sdata, res)
+	if err = saveFavorite(opts, sdata, res); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
