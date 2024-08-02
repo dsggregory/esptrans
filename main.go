@@ -21,6 +21,7 @@ type App struct {
 	outLang string
 	verbose bool
 	db      *favorites.DBService
+	lt      *libre_translate.LTClient
 }
 
 func canonicalizeString(s string) string {
@@ -37,7 +38,7 @@ func canonicalizeString(s string) string {
 func doTranslate(app *App, sdata string) {
 	sdata = canonicalizeString(sdata)
 
-	res, err := libre_translate.Translate(app.cfg, sdata, app.inLang, app.outLang)
+	res, err := app.lt.Translate(sdata, app.inLang, app.outLang)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to translate")
 		return
@@ -66,22 +67,11 @@ func doTranslate(app *App, sdata string) {
 		}
 		_, err = app.db.AddFavorite(&fav)
 		if err != nil {
-			/***
-			var serr sqlite3.Error // .ErrNo=19, .ErrNoExtended=2067
-			if errors.As(err, &serr) {
-				if serr.Code != 19 || serr.ExtendedCode != 2067 {
-					logrus.WithError(err).Fatal("Failed to add favorite")
-				}
-			} else {
-				logrus.WithError(err).Fatal("Failed to add favorite")
-			}
-			*/
 			if !strings.Contains(err.Error(), "UNIQUE") {
 				logrus.WithError(err).Fatal("Failed to add favorite")
 			}
 		}
 	}
-
 }
 
 func main() {
@@ -90,11 +80,13 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("cannot get current working directory")
 	}
+	// config with defaults
 	cfg := &config.AppSettings{
 		Debug:             "INFO",
 		LibreTranslateURL: "http://localhost:6001",
 		FavoritesDBURL:    "file://" + pwd + "/favorites.db",
 	}
+
 	var inL, outL string = libre_translate.English, libre_translate.Spanish
 	flag.StringVar(&inL, "i", "es", "Input language specification")
 	o_lang := flag.Bool("r", false, "Translate es=>en. Default is inverse.")
@@ -127,6 +119,8 @@ func main() {
 		logrus.WithError(err).Fatal("unable to connect to favorites database")
 	}
 	logrus.WithField("dsn", cfg.FavoritesDBURL).Debug("Connected to favorites database")
+
+	app.lt = libre_translate.New(cfg.LibreTranslateURL)
 
 	// input from cmdline or stdin
 	var data []byte

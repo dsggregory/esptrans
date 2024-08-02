@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"esptrans/pkg/config"
 	"io"
 	"net/http"
 )
@@ -36,7 +35,12 @@ type Response struct {
 	TranslatedText string `json:"translatedText"`
 }
 
-func translate(cfg *config.AppSettings, text string, source string, target string) (*Response, error) {
+// LTClient an instance of this service
+type LTClient struct {
+	LibreTranslateURL string
+}
+
+func (l *LTClient) translate(text string, source string, target string) (*Response, error) {
 	reqdata := Request{
 		Q:            text,
 		Source:       source,
@@ -48,7 +52,7 @@ func translate(cfg *config.AppSettings, text string, source string, target strin
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Post(cfg.LibreTranslateURL+"/translate", "application/json", bytes.NewBuffer(reqbody))
+	resp, err := http.Post(l.LibreTranslateURL+"/translate", "application/json", bytes.NewBuffer(reqbody))
 	if err != nil {
 		return nil, err
 	}
@@ -70,18 +74,23 @@ func translate(cfg *config.AppSettings, text string, source string, target strin
 	return &res, nil
 }
 
-func EnToEs(cfg *config.AppSettings, text string) (*Response, error) {
-	return translate(cfg, text, English, Spanish)
+func (l *LTClient) EnToEs(text string) (*Response, error) {
+	return l.translate(text, English, Spanish)
 }
 
-func EsToEn(cfg *config.AppSettings, text string) (*Response, error) {
-	return translate(cfg, text, Spanish, English)
+func (l *LTClient) EsToEn(text string) (*Response, error) {
+	return l.translate(text, Spanish, English)
 }
 
-func Translate(cfg *config.AppSettings, text string, source string, target string) (*Response, error) {
-	return translate(cfg, text, source, target)
+func (l *LTClient) Translate(text string, source string, target string) (*Response, error) {
+	return l.translate(text, source, target)
 }
 
-func Auto(cfg *config.AppSettings, text string) (*Response, error) {
-	return translate(cfg, text, Any, Any)
+func (l *LTClient) Auto(text string) (*Response, error) {
+	return l.translate(text, Any, Any)
+}
+
+// New creates an instance of this service
+func New(url string) *LTClient {
+	return &LTClient{LibreTranslateURL: url}
 }
