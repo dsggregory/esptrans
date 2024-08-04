@@ -1,0 +1,36 @@
+<div style="display:none;" id="SourceInfo">template/translationForm.gohtml</div>
+
+<div id="translation-body" class="pt-2 mt-2">
+    <form hx-post="/translate">
+        <input type="hidden" name="inputLang" value={{.DetectedLanguage.Language}}>
+        <b>Source language: </b>
+                <input id="sourceEn" type="radio" checked="checked" name="en">
+                <label for="sourceEn">English</label>
+                <input id="sourceEs" type="radio" name="es">
+                <label for="sourceEs">Spanish</label>
+
+        <button class="btn btn-block btn-primary btn-default" type="submit"
+                id="translate-button">
+            Search
+        </button>
+
+        <div class="textcolumn" id="en">
+            <textarea class="textcolumn" cols="40" rows="12" id="enInp" name="enInp" placeholder="Enter text to translate here">{{.Input}}</textarea>
+        </div>
+
+        <div class="textcolumn" id="es">
+            {{if .TranslatedText}}
+                <div id="esInp">
+                    <h4>{{.TranslatedText}}</h4>
+                    <b>Alternatives:</b><br/>
+                    <ul>
+                    {{range .Alternatives }}
+                        <li><i>{{.}}</i></li>
+                        <br/>
+                    {{end}}
+                    </ul>
+                </div>
+            {{end}}
+        </div>
+    </form>
+</div>

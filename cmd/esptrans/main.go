@@ -26,15 +26,13 @@ type App struct {
 
 func main() {
 	app := &App{}
-	pwd, err := os.Getwd()
-	if err != nil {
-		logrus.WithError(err).Fatal("cannot get current working directory")
-	}
 	// config with defaults
 	cfg := &config.AppSettings{
-		Debug:             "INFO",
-		LibreTranslateURL: "http://localhost:6001",
-		FavoritesDBURL:    "file://" + pwd + "/favorites.db",
+		CommonConfig: config.CommonConfig{
+			Debug:             "INFO",
+			LibreTranslateURL: config.DefaultLibreTranslateURL,
+			FavoritesDBURL:    config.DefaultFavoritesDBURL,
+		},
 	}
 
 	var inL, outL string = libre_translate.English, libre_translate.Spanish
@@ -42,7 +40,8 @@ func main() {
 	o_verbose := flag.Bool("v", false, "Verbose output")
 	o_nosave := flag.Bool("n", false, "Do not save to favorites")
 
-	if err := config.ReadConfig(cfg); err != nil {
+	err := config.ReadConfig(cfg)
+	if err != nil {
 		logrus.Fatal(err)
 	}
 	if o_lang != nil && *o_lang {

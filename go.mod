@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/dsggregory/config v0.1.0
+	github.com/gorilla/mux v1.8.1
 	github.com/onrik/gorm-logrus v0.5.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/smartystreets/goconvey v1.6.4

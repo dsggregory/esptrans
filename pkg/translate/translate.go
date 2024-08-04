@@ -27,16 +27,7 @@ func canonicalizeString(s string) string {
 
 func saveFavorite(opts *TranslateOptions, source string, res *libre_translate.Response) error {
 	if opts.DB != nil {
-		// use a map to avoid dups and maintain order in resulting array
-		malts := make(map[string]bool)
-		malts[res.TranslatedText] = true
-		alts := []string{res.TranslatedText}
-		for _, x := range res.Alternatives {
-			if _, ok := malts[x]; !ok {
-				alts = append(alts, x)
-			}
-			malts[x] = true
-		}
+		alts := CanonicalizeTranslations(res)
 		fav := favorites.Favorite{
 			Source:     source,
 			Target:     alts,
@@ -54,6 +45,21 @@ func saveFavorite(opts *TranslateOptions, source string, res *libre_translate.Re
 		}
 	}
 	return nil
+}
+
+func CanonicalizeTranslations(res *libre_translate.Response) []string {
+	// use a map to avoid dups and maintain order in resulting array
+	malts := make(map[string]bool)
+	malts[res.TranslatedText] = true
+	alts := []string{res.TranslatedText}
+	for _, x := range res.Alternatives {
+		if _, ok := malts[x]; !ok {
+			alts = append(alts, x)
+		}
+		malts[x] = true
+	}
+
+	return alts
 }
 
 // Translate calls the LibreTranslate wrapper and saves to favorites

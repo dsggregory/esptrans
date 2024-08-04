@@ -1,0 +1,30 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Translate</title>
+    <link rel="stylesheet" type="text/css" href="/styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.6"
+            integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
+            crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+<div style="display:none;" id="SourceInfo">template/dashboard.gohtml</div>
+
+
+<div class="wrapper" id="wrapper">
+    <!-- Sidebar -->
+    <nav id="sidebar" class="collapse d-lg-block sidebar">
+    </nav>
+
+    <div id="hero" class="flex-fill w-75 p-3">
+        <div class="container" id="container">
+            {{template "translationForm.gohtml" .}}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
