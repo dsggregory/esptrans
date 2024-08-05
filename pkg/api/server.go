@@ -95,12 +95,18 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	}
 	trtext = vtxt[0]
 
+	var skipFav bool
+	skipFavStr, ok := values["skipFav"]
+	if ok && len(skipFavStr) > 0 {
+		skipFav = true
+	}
+
 	opts := translate.TranslateOptions{
 		InLang:       srcLang,
 		OutLang:      targetLang,
 		DB:           s.db,
 		LT:           s.lt,
-		SkipFavorite: true, // TODO for now
+		SkipFavorite: skipFav,
 	}
 	trresp, err := translate.Translate(&opts, trtext)
 	if err != nil {

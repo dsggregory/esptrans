@@ -6,7 +6,10 @@
         {{if eq "" $lang}}
             {{$lang = "en"}}
         {{end}}
-        <input type="hidden" name="inputLang" value={{$lang}}>
+        <div class="flex items-center">
+            <input type="checkbox" name="skipFav" value="true">
+            <label for="skipFav" class="">Don't save favorite</label>
+        </div>
         <div class="flex items-center">
             <div class="flex py-4 pr-2">
                <b class="">Source language: </b>
