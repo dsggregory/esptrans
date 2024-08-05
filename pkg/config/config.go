@@ -33,8 +33,8 @@ type APIConfig struct {
 
 // AppSettings settings for the application
 type AppSettings struct {
-	CommonConfig
-	APIConfig
+	CommonConfig `flag:""`
+	APIConfig    `flag:""`
 }
 
 // ReadConfig using default values from the arg, read config settings from cmdline or environment. Modifies the pointer to defaults.

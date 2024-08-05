@@ -1,6 +1,7 @@
 package api
 
 import (
+	"esptrans/pkg/favorites"
 	"esptrans/pkg/libre_translate"
 	"esptrans/pkg/translate"
 	"github.com/sirupsen/logrus"
@@ -34,11 +35,17 @@ func (s *Server) tTranslationsJoin(res *libre_translate.Response) string {
 	return strings.Join(alts, "\n")
 }
 
+// tTranslationsJoin gotemplate function to join translations and alternatives
+func (s *Server) tFavAltsJoin(fav favorites.Favorite) string {
+	return strings.Join(fav.Target, "\n")
+}
+
 func (s *Server) LoadTemplates() error {
 	dir := s.cfg.StaticPages + "/templates"
 	t, err := template.New("template/").Funcs(template.FuncMap{
-		"sub":    s.tSub,
-		"trjoin": s.tTranslationsJoin,
+		"sub":         s.tSub,
+		"trjoin":      s.tTranslationsJoin,
+		"favAltsJoin": s.tFavAltsJoin,
 	}).ParseGlob(dir + "/*.gohtml")
 	if err != nil {
 		return err

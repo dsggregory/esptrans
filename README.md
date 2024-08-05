@@ -1,8 +1,12 @@
 # Spanish Translation using free API
 This is an app to translate input into/out-of english->spanish using the free [Libre Translate](https://libretranslate.com) and to store favorite translations into a local sqlite3 database.
 
-It costs to use their services, but you can host [your own server](https://github.com/LibreTranslate/LibreTranslate). This is what we'll be doing.
+It costs to use LibreTranslate API services, but you can host [your own server](https://github.com/LibreTranslate/LibreTranslate). This is what we'll be doing.
 
+## Caveat
+There are MUCH better translation apps online. I highly recommend [DeepL](https://www.deepl.com/en/translator). It has many free features, but you need to pay to store favorite lists. If you are looking for a single tool to translate, speak, integrate with your OS, et al., then DeepL is for you.
+
+Otherwise, if you are cheap like me, then this project may be what you are looking for.
 
 ## LibreTranslate
 ### Install LibreTranslate

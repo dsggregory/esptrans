@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"html/template"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -115,6 +116,41 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	values, accept := GetRequestParams(r)
+	_ = values
+
+	limit := 5
+	if ls, ok := values["limit"]; ok {
+		l, err := strconv.Atoi(ls[0])
+		if err != nil || l <= 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		limit = l
+	}
+	favs, err := s.db.SelectRandomFavorites(limit)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// respond
+	accept = NegotiateContentType(r, []string{CtAny, CtJson, CtHtml}, accept)
+	switch accept {
+	case CtJson:
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(favs)
+	case CtHtml, CtAny:
+		_ = s.renderTemplate(w, "flashcards.gohtml", favs)
+	}
+}
+
 // Stop shuts down the web server
 func (s *Server) Stop(ctx context.Context) error {
 	if s.svr == nil {
@@ -164,6 +200,7 @@ func (s *Server) newRouter() error {
 	s.mux.Handle("/template/{name}", l(http.HandlerFunc(s.template))).Methods(http.MethodGet, http.MethodPost)
 
 	s.mux.Handle("/translate", l(http.HandlerFunc(s.translate))).Methods(http.MethodPost)
+	s.mux.Handle("/flashcards", l(http.HandlerFunc(s.flashcards))).Methods(http.MethodGet)
 
 	// for static pages e.g. javascript
 	s.mux.PathPrefix("/").Handler(l(http.FileServer(http.Dir(s.cfg.StaticPages))))
