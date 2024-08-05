@@ -1,19 +1,27 @@
 <div style="display:none;" id="SourceInfo">template/translationForm.gohtml</div>
 
-<div id="translation-body" class="pt-2 mt-2">
+<div id="translation-body" class="">
     <form hx-post="/translate">
         <input type="hidden" name="inputLang" value={{.DetectedLanguage.Language}}>
-        <div class="flex items-center mb-4 p-4">
-            <b>Source language: </b>
-            <input id="sourceEn" type="radio" checked="checked" name="srclang" value="en" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-            <label for="sourceEn" class="w-4 h-4 m-2">English</label>
-            <input id="sourceEs" type="radio" name="srclang" value="es" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-            <label for="sourceEs" class="w-4 h-4 m-2">Spanish</label>
+        <div class="flex items-center">
+            <div class="flex py-4 pr-2">
+               <b class="">Source language: </b>
+            </div>
+            <div class="flex py-4 px-2">
+                <input id="sourceEn" type="radio" checked="checked" name="srclang" value="en" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label for="sourceEn" class="">English</label>
+            </div>
+            <div class="flex py-4 px-2">
+                <input id="sourceEs" type="radio" name="srclang" value="es" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label for="sourceEs" class="">Spanish</label>
+            </div>
 
-            <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
-                    id="translate-button">
-                Search
-            </button>
+            <div class="flex px-4">
+                <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
+                        id="translate-button">
+                    Search
+                </button>
+            </div>
         </div>
 
         <div class="p-4" id="en">
