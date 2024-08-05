@@ -21,7 +21,7 @@ type App struct {
 	outLang string
 	verbose bool
 	db      *favorites.DBService
-	lt      *libre_translate.LTClient
+	trSvc   *translate.Translate
 }
 
 func main() {
@@ -67,7 +67,10 @@ func main() {
 		logrus.WithField("dsn", cfg.FavoritesDBURL).Debug("Connected to favorites database")
 	}
 
-	app.lt = libre_translate.New(cfg.LibreTranslateURL)
+	app.trSvc, err = translate.New(app.db, cfg.LibreTranslateURL)
+	if err != nil {
+		logrus.WithError(err).Fatal("unable to init the translation service")
+	}
 
 	// input from cmdline or stdin
 	var data []byte
@@ -89,10 +92,8 @@ func main() {
 	opts := &translate.TranslateOptions{
 		InLang:  app.inLang,
 		OutLang: app.outLang,
-		DB:      app.db,
-		LT:      app.lt,
 	}
-	res, err := translate.Translate(opts, sdata)
+	res, err := app.trSvc.Translate(opts, sdata)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to translate")
 		return

@@ -6,7 +6,7 @@ import (
 	"esptrans/pkg/api"
 	"esptrans/pkg/config"
 	"esptrans/pkg/favorites"
-	"esptrans/pkg/libre_translate"
+	"esptrans/pkg/translate"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -15,8 +15,8 @@ import (
 )
 
 type App struct {
-	db *favorites.DBService
-	lt *libre_translate.LTClient
+	db    *favorites.DBService
+	trSvc *translate.Translate
 }
 
 func main() {
@@ -52,7 +52,10 @@ func main() {
 		logrus.Warning("no favorites database configured")
 	}
 
-	app.lt = libre_translate.New(cfg.LibreTranslateURL)
+	app.trSvc, err = translate.New(app.db, cfg.LibreTranslateURL)
+	if err != nil {
+		logrus.WithError(err).Fatal("unable to init translation service")
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -62,7 +65,7 @@ func main() {
 
 	logrus.WithField("addr", cfg.ListenAddr).Info("starting server")
 	errChan := make(chan error, 1)
-	svr, err := api.NewServer(ctx, cfg, app.db, app.lt)
+	svr, err := api.NewServer(ctx, cfg, app.db, app.trSvc)
 	if err != nil {
 		logrus.WithError(err).Fatal("unable to init server")
 	}

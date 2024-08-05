@@ -77,20 +77,21 @@ func TestTranslate(t *testing.T) {
 		}))
 		defer ts.Close()
 
+		trSvc, err := New(nil, ts.URL)
+		So(err, ShouldBeNil)
+
 		opts := &TranslateOptions{
 			InLang:  "en",
 			OutLang: "es",
-			DB:      nil,
-			LT:      libre_translate.New(ts.URL),
 		}
 		for _, tc := range tcs {
-			ltresp, err := Translate(opts, tc.orig)
+			ltresp, err := trSvc.Translate(opts, tc.orig)
 			So(err, ShouldBeNil)
 			So(ltresp.TranslatedText, ShouldResemble, tc.expXlate)
 			So(len(ltresp.Alternatives), ShouldBeGreaterThan, 0)
 		}
 
-		ltresp, err := Translate(opts, "failed translate")
+		ltresp, err := trSvc.Translate(opts, "failed translate")
 		So(err, ShouldNotBeNil)
 		So(ltresp, ShouldBeNil)
 	})

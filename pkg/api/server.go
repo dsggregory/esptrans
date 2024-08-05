@@ -26,7 +26,7 @@ type Server struct {
 	wg            *sync.WaitGroup
 	logMiddleware MidWareFunc
 	db            *favorites.DBService
-	lt            *libre_translate.LTClient
+	trSvc         *translate.Translate
 }
 
 type MidWareFunc func(next http.Handler) http.Handler
@@ -104,11 +104,9 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	opts := translate.TranslateOptions{
 		InLang:       srcLang,
 		OutLang:      targetLang,
-		DB:           s.db,
-		LT:           s.lt,
 		SkipFavorite: skipFav,
 	}
-	trresp, err := translate.Translate(&opts, trtext)
+	trresp, err := s.trSvc.Translate(&opts, trtext)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -224,15 +222,11 @@ func (s *Server) newRouter() error {
 const RdbSessionStore = 10
 
 // NewServer creates an instance of the API. See StartServer().
-//
-// db is the database service and cannot be nil.
-//
-// webauthnService is an already-configured webauthn RP.  If nil, one is created from the cfg.
-func NewServer(ctx context.Context, cfg *config.AppSettings, mdb *favorites.DBService, lt *libre_translate.LTClient) (*Server, error) {
+func NewServer(ctx context.Context, cfg *config.AppSettings, mdb *favorites.DBService, trSvc *translate.Translate) (*Server, error) {
 	s := &Server{
 		cfg:           cfg,
 		db:            mdb,
-		lt:            lt,
+		trSvc:         trSvc,
 		mux:           mux.NewRouter(),
 		logMiddleware: NewLoggingMiddleware,
 	}

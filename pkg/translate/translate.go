@@ -7,11 +7,13 @@ import (
 	"strings"
 )
 
+type Translate struct {
+	DB *favorites.DBService
+	LT *libre_translate.LTClient
+}
 type TranslateOptions struct {
 	InLang       string
 	OutLang      string
-	DB           *favorites.DBService
-	LT           *libre_translate.LTClient
 	SkipFavorite bool
 }
 
@@ -26,8 +28,8 @@ func canonicalizeString(s string) string {
 	return s
 }
 
-func saveFavorite(opts *TranslateOptions, source string, res *libre_translate.Response) error {
-	if opts.DB != nil {
+func (t *Translate) saveFavorite(opts *TranslateOptions, source string, res *libre_translate.Response) error {
+	if t.DB != nil {
 		alts := CanonicalizeTranslations(res)
 		fav := favorites.Favorite{
 			Source:     source,
@@ -38,7 +40,7 @@ func saveFavorite(opts *TranslateOptions, source string, res *libre_translate.Re
 		if res.DetectedLanguage.Language != "" {
 			fav.SourceLang = res.DetectedLanguage.Language
 		}
-		_, err := opts.DB.AddFavorite(&fav)
+		_, err := t.DB.AddFavorite(&fav)
 		if err != nil {
 			if !strings.Contains(err.Error(), "UNIQUE") {
 				return fmt.Errorf("error adding favorite: %w", err)
@@ -64,21 +66,31 @@ func CanonicalizeTranslations(res *libre_translate.Response) []string {
 }
 
 // Translate calls the LibreTranslate wrapper and saves to favorites
-func Translate(opts *TranslateOptions, sdata string) (*libre_translate.Response, error) {
+func (t *Translate) Translate(opts *TranslateOptions, sdata string) (*libre_translate.Response, error) {
 	if len(sdata) == 0 {
 		return nil, fmt.Errorf("empty string")
 	}
 	sdata = canonicalizeString(sdata)
 
-	res, err := opts.LT.Translate(sdata, opts.InLang, opts.OutLang)
+	res, err := t.LT.Translate(sdata, opts.InLang, opts.OutLang)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to translate: %w", err)
 	}
 
 	if !opts.SkipFavorite {
-		if err = saveFavorite(opts, sdata, res); err != nil {
+		if err = t.saveFavorite(opts, sdata, res); err != nil {
 			return nil, err
 		}
 	}
 	return res, nil
+}
+
+// New creates a new instance of the translation API wrapper
+func New(db *favorites.DBService, apiURL string) (*Translate, error) {
+	t := &Translate{
+		DB: db,
+		LT: libre_translate.New(apiURL),
+	}
+
+	return t, nil
 }
