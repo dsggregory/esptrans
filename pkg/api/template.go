@@ -35,17 +35,27 @@ func (s *Server) tTranslationsJoin(res *libre_translate.Response) string {
 	return strings.Join(alts, "\n")
 }
 
-// tTranslationsJoin gotemplate function to join translations and alternatives
+// tFavAltsJoin gotemplate function to join favorites
 func (s *Server) tFavAltsJoin(fav favorites.Favorite) string {
 	return strings.Join(fav.Target, "\n")
+}
+
+// tLangIsChecked gotemplate function to return a safe string that can be added as a html attribute
+func (s *Server) tLangIsChecked(lang string, inLang string) template.HTMLAttr {
+	attr := template.HTMLAttr(`checked="checked"`)
+	if lang != inLang {
+		attr = ""
+	}
+	return attr
 }
 
 func (s *Server) LoadTemplates() error {
 	dir := s.cfg.StaticPages + "/templates"
 	t, err := template.New("template/").Funcs(template.FuncMap{
-		"sub":         s.tSub,
-		"trjoin":      s.tTranslationsJoin,
-		"favAltsJoin": s.tFavAltsJoin,
+		"sub":           s.tSub,
+		"trjoin":        s.tTranslationsJoin,
+		"favAltsJoin":   s.tFavAltsJoin,
+		"langIsChecked": s.tLangIsChecked,
 	}).ParseGlob(dir + "/*.gohtml")
 	if err != nil {
 		return err

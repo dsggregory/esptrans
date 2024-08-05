@@ -8,10 +8,11 @@ import (
 )
 
 type TranslateOptions struct {
-	InLang  string
-	OutLang string
-	DB      *favorites.DBService
-	LT      *libre_translate.LTClient
+	InLang       string
+	OutLang      string
+	DB           *favorites.DBService
+	LT           *libre_translate.LTClient
+	SkipFavorite bool
 }
 
 func canonicalizeString(s string) string {
@@ -74,8 +75,10 @@ func Translate(opts *TranslateOptions, sdata string) (*libre_translate.Response,
 		return nil, fmt.Errorf("Failed to translate: %w", err)
 	}
 
-	if err = saveFavorite(opts, sdata, res); err != nil {
-		return nil, err
+	if !opts.SkipFavorite {
+		if err = saveFavorite(opts, sdata, res); err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }

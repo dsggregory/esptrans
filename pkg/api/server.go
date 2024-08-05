@@ -6,6 +6,7 @@ import (
 	"esptrans/pkg/config"
 	"esptrans/pkg/favorites"
 	"esptrans/pkg/libre_translate"
+	"esptrans/pkg/translate"
 	"fmt"
 	"github.com/gorilla/mux"
 	"html/template"
@@ -76,27 +77,32 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 
 	var srcLang, targetLang, trtext string
 
-	lang, ok := values["inputLang"]
+	lang, ok := values["srclang"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	srcLang = lang[0]
-	var vtxt []string
 	if srcLang == libre_translate.English {
 		targetLang = libre_translate.Spanish
-		vtxt, ok = values["enInp"]
 	} else {
 		targetLang = libre_translate.English
-		vtxt, ok = values["esInp"]
 	}
+	vtxt, ok := values["input"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	trtext = vtxt[0]
 
-	trresp, err := s.lt.Translate(trtext, srcLang, targetLang)
+	opts := translate.TranslateOptions{
+		InLang:       srcLang,
+		OutLang:      targetLang,
+		DB:           s.db,
+		LT:           s.lt,
+		SkipFavorite: true, // TODO for now
+	}
+	trresp, err := translate.Translate(&opts, trtext)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
