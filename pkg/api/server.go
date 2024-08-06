@@ -8,6 +8,7 @@ import (
 	"esptrans/pkg/translate"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -84,6 +85,7 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 
 	lang, ok := values["srclang"]
 	if !ok {
+		logrus.WithField("state", "form").Error("srclang is required")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -95,6 +97,7 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	}
 	vtxt, ok := values["input"]
 	if !ok {
+		logrus.WithField("state", "form").Error("input is required")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -113,6 +116,7 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	}
 	trresp, err := s.trSvc.Translate(&opts, trtext)
 	if err != nil {
+		logrus.WithError(err).Error("argos failed")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -133,6 +137,7 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	if s.db == nil {
+		logrus.Error("Database not defined for flashcards")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -144,6 +149,7 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	if ls, ok := values["limit"]; ok {
 		l, err := strconv.Atoi(ls[0])
 		if err != nil || l <= 0 {
+			logrus.WithField("state", "form").Error("limit is wrong type")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -151,6 +157,7 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	}
 	favs, err := s.db.SelectRandomFavorites(limit)
 	if err != nil {
+		logrus.WithError(err).Error("select failed")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
