@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"esptrans/pkg/config"
 	"esptrans/pkg/favorites"
-	"esptrans/pkg/libre_translate"
 	"esptrans/pkg/translate"
 	"flag"
 	"fmt"
@@ -21,33 +20,32 @@ type App struct {
 	outLang string
 	verbose bool
 	db      *favorites.DBService
-	lt      *libre_translate.LTClient
+	trSvc   *translate.Translate
 }
 
 func main() {
 	app := &App{}
-	pwd, err := os.Getwd()
-	if err != nil {
-		logrus.WithError(err).Fatal("cannot get current working directory")
-	}
 	// config with defaults
 	cfg := &config.AppSettings{
-		Debug:             "INFO",
-		LibreTranslateURL: "http://localhost:6001",
-		FavoritesDBURL:    "file://" + pwd + "/favorites.db",
+		CommonConfig: config.CommonConfig{
+			Debug:             "INFO",
+			LibreTranslateURL: config.DefaultLibreTranslateURL,
+			FavoritesDBURL:    config.DefaultFavoritesDBURL,
+		},
 	}
 
-	var inL, outL string = libre_translate.English, libre_translate.Spanish
+	var inL, outL string = translate.English, translate.Spanish
 	o_lang := flag.Bool("r", false, "Translate es=>en. Default is inverse.")
 	o_verbose := flag.Bool("v", false, "Verbose output")
 	o_nosave := flag.Bool("n", false, "Do not save to favorites")
 
-	if err := config.ReadConfig(cfg); err != nil {
+	err := config.ReadConfig(cfg)
+	if err != nil {
 		logrus.Fatal(err)
 	}
 	if o_lang != nil && *o_lang {
-		inL = libre_translate.Spanish
-		outL = libre_translate.English
+		inL = translate.Spanish
+		outL = translate.English
 	}
 	logrus.WithFields(logrus.Fields{"inL": inL, "outL": outL}).Debug("Starting")
 
@@ -68,7 +66,10 @@ func main() {
 		logrus.WithField("dsn", cfg.FavoritesDBURL).Debug("Connected to favorites database")
 	}
 
-	app.lt = libre_translate.New(cfg.LibreTranslateURL)
+	app.trSvc, err = translate.New(app.db, cfg.LibreTranslateURL)
+	if err != nil {
+		logrus.WithError(err).Fatal("unable to init the translation service")
+	}
 
 	// input from cmdline or stdin
 	var data []byte
@@ -90,10 +91,8 @@ func main() {
 	opts := &translate.TranslateOptions{
 		InLang:  app.inLang,
 		OutLang: app.outLang,
-		DB:      app.db,
-		LT:      app.lt,
 	}
-	res, err := translate.Translate(opts, sdata)
+	res, err := app.trSvc.Translate(opts, sdata)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to translate")
 		return

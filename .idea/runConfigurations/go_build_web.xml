@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="go build web" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="esptrans" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="-favorites-dburl file://$PROJECT_DIR$/favorites.db" />
+    <kind value="FILE" />
+    <package value="esptrans" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/cmd/server/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

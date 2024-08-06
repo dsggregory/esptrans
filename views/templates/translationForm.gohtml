@@ -1,0 +1,55 @@
+<div style="display:none;" id="SourceInfo">template/translationForm.gohtml</div>
+
+<div id="translation-body" class="">
+    <form hx-post="/translate">
+        {{$lang := .DetectedLanguage.Language}}
+        {{if eq "" $lang}}
+            {{$lang = "en"}}
+        {{end}}
+        <div class="flex items-center">
+            <input type="checkbox" name="skipFav" value="true">
+            <label for="skipFav" class="">Don't save favorite</label>
+        </div>
+        <div class="flex items-center">
+            <div class="flex py-4 pr-2">
+               <b class="">Source language: </b>
+            </div>
+            <div class="flex py-4 px-2">
+                <input id="sourceEn" type="radio" {{langIsChecked $lang "en"}} name="srclang" value="en" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label for="sourceEn" class="">English</label>
+            </div>
+            <div class="flex py-4 px-2">
+                <input id="sourceEs" type="radio" {{langIsChecked $lang "es"}} name="srclang" value="es" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label for="sourceEs" class="">Spanish</label>
+            </div>
+
+            <div class="flex px-4">
+                <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
+                        id="translate-button">
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4" id="en">
+            <textarea class="textcolumn" cols="40" rows="12" id="input" name="input" placeholder="Enter text to translate here">{{.Input}}</textarea>
+        </div>
+
+        <div class="space-y-4 p-4 rounded-xl" id="es">
+            {{if .TranslatedText}}
+                <div class="mx-5 font-semibold text-2xl">
+                    {{.TranslatedText}}
+                </div>
+                <div class="mx-5 space-y-4">
+                    <b>Alternatives:</b><br/>
+                    <ul class="list-inside list-disc ml-4">
+                    {{range .Alternatives }}
+                        <li><i>{{.}}</i></li>
+                        <br/>
+                    {{end}}
+                    </ul>
+                </div>
+            {{end}}
+        </div>
+    </form>
+</div>

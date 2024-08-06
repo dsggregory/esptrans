@@ -2,7 +2,6 @@ package translate
 
 import (
 	"encoding/json"
-	"esptrans/pkg/libre_translate"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -40,7 +39,7 @@ func TestTranslate(t *testing.T) {
 		}
 		// fake LibreTranslate server
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			lreq := libre_translate.Request{}
+			lreq := Request{}
 			body, err := io.ReadAll(r.Body)
 			_ = r.Body.Close()
 			if err != nil {
@@ -62,7 +61,7 @@ func TestTranslate(t *testing.T) {
 			if transTxt == "" {
 				w.WriteHeader(http.StatusNotFound)
 			}
-			resp := libre_translate.Response{
+			resp := Response{
 				Input:          lreq.Source,
 				Alternatives:   []string{"none"},
 				TranslatedText: transTxt,
@@ -77,20 +76,21 @@ func TestTranslate(t *testing.T) {
 		}))
 		defer ts.Close()
 
+		trSvc, err := New(nil, ts.URL)
+		So(err, ShouldBeNil)
+
 		opts := &TranslateOptions{
 			InLang:  "en",
 			OutLang: "es",
-			DB:      nil,
-			LT:      libre_translate.New(ts.URL),
 		}
 		for _, tc := range tcs {
-			ltresp, err := Translate(opts, tc.orig)
+			ltresp, err := trSvc.Translate(opts, tc.orig)
 			So(err, ShouldBeNil)
 			So(ltresp.TranslatedText, ShouldResemble, tc.expXlate)
 			So(len(ltresp.Alternatives), ShouldBeGreaterThan, 0)
 		}
 
-		ltresp, err := Translate(opts, "failed translate")
+		ltresp, err := trSvc.Translate(opts, "failed translate")
 		So(err, ShouldNotBeNil)
 		So(ltresp, ShouldBeNil)
 	})
