@@ -2,7 +2,6 @@ package api
 
 import (
 	"esptrans/pkg/favorites"
-	"esptrans/pkg/libre_translate"
 	"esptrans/pkg/translate"
 	"github.com/sirupsen/logrus"
 	"html/template"
@@ -26,7 +25,7 @@ func (s *Server) tSub(vals ...int) int {
 }
 
 // tTranslationsJoin gotemplate function to join translations and alternatives
-func (s *Server) tTranslationsJoin(res *libre_translate.Response) string {
+func (s *Server) tTranslationsJoin(res *translate.Response) string {
 	if res == nil {
 		return ""
 	}

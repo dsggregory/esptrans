@@ -1,4 +1,4 @@
-package libre_translate
+package translate
 
 import (
 	"bytes"
@@ -10,30 +10,7 @@ import (
 
 const (
 	LTURL = "http://localhost:6001/"
-
-	English = "en"
-	Spanish = "es"
-	Any     = "auto"
 )
-
-type Request struct {
-	Q            string `json:"q"`
-	Source       string `json:"source"`
-	Target       string `json:"target"`
-	Format       string `json:"format"`
-	Alternatives int    `json:"alternatives"`
-	APIKey       string `json:"api_key"`
-}
-
-type Response struct {
-	Input            string   `json:"input,omitempty"`
-	Alternatives     []string `json:"alternatives"`
-	DetectedLanguage struct {
-		Language   string  `json:"language"`
-		Confidence float64 `json:"confidence"`
-	} `json:"detectedLanguage"`
-	TranslatedText string `json:"translatedText"`
-}
 
 // LTClient an instance of this service
 type LTClient struct {
@@ -91,6 +68,6 @@ func (l *LTClient) Auto(text string) (*Response, error) {
 }
 
 // New creates an instance of this service
-func New(url string) *LTClient {
+func NewLibreTranslate(url string) *LTClient {
 	return &LTClient{LibreTranslateURL: url}
 }

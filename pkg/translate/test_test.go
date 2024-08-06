@@ -2,7 +2,6 @@ package translate
 
 import (
 	"encoding/json"
-	"esptrans/pkg/libre_translate"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -40,7 +39,7 @@ func TestTranslate(t *testing.T) {
 		}
 		// fake LibreTranslate server
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			lreq := libre_translate.Request{}
+			lreq := Request{}
 			body, err := io.ReadAll(r.Body)
 			_ = r.Body.Close()
 			if err != nil {
@@ -62,7 +61,7 @@ func TestTranslate(t *testing.T) {
 			if transTxt == "" {
 				w.WriteHeader(http.StatusNotFound)
 			}
-			resp := libre_translate.Response{
+			resp := Response{
 				Input:          lreq.Source,
 				Alternatives:   []string{"none"},
 				TranslatedText: transTxt,

@@ -1,28 +1,27 @@
 # Spanish Translation using free API
-This is an app to translate input into/out-of english->spanish using the free [Libre Translate](https://libretranslate.com) and to store favorite translations into a local sqlite3 database.
-
-It costs to use LibreTranslate API services, but you can host [your own server](https://github.com/LibreTranslate/LibreTranslate). This is what we'll be doing.
+This is an app to translate to/from english->spanish using the free [Argos Translate python package](https://github.com/argosopentech/argos-translate/tree/master) and to store favorite translations into a local sqlite3 database. Everything is hosted locally.
 
 ## Caveat
-There are MUCH better translation apps online. I highly recommend [DeepL](https://www.deepl.com/en/translator). It has many free features, but you need to pay to store favorite lists. If you are looking for a single tool to translate, speak, integrate with your OS, et al., then DeepL is for you.
+There are MUCH better translation solutions online. I highly recommend [DeepL](https://www.deepl.com/en/translator). It has many free features, but you need to pay to store favorite lists. If you are looking for a single tool to translate, speak, integrate with your OS, et al., then DeepL is for you.
 
 Otherwise, if you are cheap like me, then this project may be what you are looking for.
 
-## LibreTranslate
-### Install LibreTranslate
-LibreTranslate requires python3.
-```shell
-pip install libretranslate
-```
+## Quickstart
+* when run, the directory of this code base will also contain the DB file
+* install Argos Translate python package (see their github README)
+* Start the web server
+  * > go run cmd/server/main.go -favorites-dburl file://$PWD/favorites.db
+* Browse to http://localhost:8080
 
-### Startup LibreTranslate self-hosted server
-```shell
-sh ./start-libre-translate.sh &
-```
-Test that it works by running:
-> node test-libre-translate.js
+## Argos Translate
+Ref: [Argos Translate python package](https://github.com/argosopentech/argos-translate/tree/master)
 
-## Usage
+This is a large python package that provides libraries to translate to/from various languages. Initially you must download it. 
+
+A [local script](./argostranslate-api.py) starts an API server that minimally responds like LibreTranslate. The main web server manages the running of the script. This was designed to avoid the LibreTranslate external dependency, so only a single app need be started.
+
+## Optional, Command-line Usage
+The command-line app is more of a simple convenience.
 > make
 ```shell
 Usage of ./esptrans:

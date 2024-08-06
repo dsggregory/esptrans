@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"esptrans/pkg/config"
 	"esptrans/pkg/favorites"
-	"esptrans/pkg/libre_translate"
 	"esptrans/pkg/translate"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -39,8 +38,8 @@ func (s *Server) SetSvr(svr *http.Server) {
 // as well as any other credentials previously registered by the authenticated
 // user.
 func (s *Server) index(w http.ResponseWriter, _ *http.Request) {
-	res := libre_translate.Response{}
-	res.DetectedLanguage.Language = libre_translate.English
+	res := translate.Response{}
+	res.DetectedLanguage.Language = translate.English
 	_ = s.renderTemplate(w, "dashboard.gohtml", &res)
 }
 
@@ -83,10 +82,10 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	srcLang = lang[0]
-	if srcLang == libre_translate.English {
-		targetLang = libre_translate.Spanish
+	if srcLang == translate.English {
+		targetLang = translate.Spanish
 	} else {
-		targetLang = libre_translate.English
+		targetLang = translate.English
 	}
 	vtxt, ok := values["input"]
 	if !ok {

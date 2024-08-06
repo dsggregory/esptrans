@@ -63,7 +63,7 @@ func main() {
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 
-	logrus.WithField("addr", cfg.ListenAddr).Info("starting server")
+	logrus.WithField("addr", cfg.ListenAddr).Info("starting web server")
 	errChan := make(chan error, 1)
 	svr, err := api.NewServer(ctx, cfg, app.db, app.trSvc)
 	if err != nil {
@@ -78,11 +78,12 @@ func main() {
 		logrus.Info("got context done")
 	case err := <-errChan:
 		if !errors.Is(err, http.ErrServerClosed) {
-			logrus.WithError(err).Error("API server finished normally")
+			logrus.WithError(err).Error("Web server finished normally")
 		}
 	}
 	_ = svr.Stop(ctx)
+	_ = app.trSvc.Close()
 
-	logrus.Info("server exiting")
+	logrus.Info("web server exiting")
 
 }

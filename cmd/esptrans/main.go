@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"esptrans/pkg/config"
 	"esptrans/pkg/favorites"
-	"esptrans/pkg/libre_translate"
 	"esptrans/pkg/translate"
 	"flag"
 	"fmt"
@@ -35,7 +34,7 @@ func main() {
 		},
 	}
 
-	var inL, outL string = libre_translate.English, libre_translate.Spanish
+	var inL, outL string = translate.English, translate.Spanish
 	o_lang := flag.Bool("r", false, "Translate es=>en. Default is inverse.")
 	o_verbose := flag.Bool("v", false, "Verbose output")
 	o_nosave := flag.Bool("n", false, "Do not save to favorites")
@@ -45,8 +44,8 @@ func main() {
 		logrus.Fatal(err)
 	}
 	if o_lang != nil && *o_lang {
-		inL = libre_translate.Spanish
-		outL = libre_translate.English
+		inL = translate.Spanish
+		outL = translate.English
 	}
 	logrus.WithFields(logrus.Fields{"inL": inL, "outL": outL}).Debug("Starting")
 
