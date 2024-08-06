@@ -1,8 +1,9 @@
 <div style="display:none;" id="SourceInfo">template/flashcards.gohtml</div>
 
 <script>
-    function showDiv(id) {
-        document.getElementById(id).style.display = "block";
+    function reveal() {
+        document.getElementById('answer').style.display = "block";
+        document.getElementById('reveal').style.display = "none";
     }
 </script>
 
@@ -35,11 +36,13 @@
 
         <div class="mx-5">
             <div class="flex items-center mb-2 p-2">
-                <a class="underline cursor-pointer text-blue-600 hover:text-blue-800" onclick="showDiv('answer')">
-                    Reveal
-                </a>
-                &nbsp; | &nbsp;
-                <a class="underline cursor-pointer text-blue-600 hover:text-blue-800" hx-get="/flashcards?limit=1" hx-target="#main">
+                <div id="reveal">
+                    <a class="underline cursor-pointer text-blue-600 hover:text-blue-800" onclick="reveal()">
+                        Reveal
+                    </a>
+                    &nbsp; | &nbsp;
+                </div>
+                <a id="nextfc" class="underline cursor-pointer text-blue-600 hover:text-blue-800" hx-get="/flashcards?limit=1" hx-target="#main">
                     Next
                 </a>
             </div>

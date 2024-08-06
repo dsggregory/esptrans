@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="go build esptrans" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+    <module name="esptrans" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="-debug debug &quot;\&quot;Where can we go to pick strawberries?\&quot;\n&quot;" />
+    <kind value="PACKAGE" />
+    <package value="esptrans" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

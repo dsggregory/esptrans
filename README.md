@@ -1,6 +1,8 @@
 # Spanish Translation using free API
 This is an app to translate to/from english->spanish using the free [Argos Translate python package](https://github.com/argosopentech/argos-translate/tree/master) and to store favorite translations into a local sqlite3 database. Everything is hosted locally.
 
+The web server is built using TailwindCSS and HTMX.
+
 ## Caveat
 There are MUCH better translation solutions online. I highly recommend [DeepL](https://www.deepl.com/en/translator). It has many free features, but you need to pay to store favorite lists. If you are looking for a single tool to translate, speak, integrate with your OS, et al., then DeepL is for you.
 
@@ -12,6 +14,8 @@ Otherwise, if you are cheap like me, then this project may be what you are looki
 * Start the web server
   * > go run cmd/server/main.go -favorites-dburl file://$PWD/favorites.db
 * Browse to http://localhost:8080
+
+This starts the web server on port 8080 and the Argos REST service on port 6001. Both may be changed using command-line options.
 
 ## Argos Translate
 Ref: [Argos Translate python package](https://github.com/argosopentech/argos-translate/tree/master)

@@ -71,9 +71,15 @@ func (s *Server) addHealthRoutes(l MidWareFunc) {
 }
 
 func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		trresp := translate.Response{}
+		trresp.DetectedLanguage.Language = translate.English
+		_ = s.renderTemplate(w, "translationForm.gohtml", trresp)
+		return
+	}
+
 	// expect application/x-www-form-urlencoded
 	values, accept := GetRequestParams(r)
-
 	var srcLang, targetLang, trtext string
 
 	lang, ok := values["srclang"]
@@ -208,7 +214,7 @@ func (s *Server) newRouter() error {
 	s.mux.Handle("/", l(http.HandlerFunc(s.index))).Methods(http.MethodGet)
 	s.mux.Handle("/template/{name}", l(http.HandlerFunc(s.template))).Methods(http.MethodGet, http.MethodPost)
 
-	s.mux.Handle("/translate", l(http.HandlerFunc(s.translate))).Methods(http.MethodPost)
+	s.mux.Handle("/translate", l(http.HandlerFunc(s.translate))).Methods(http.MethodGet, http.MethodPost)
 	s.mux.Handle("/flashcards", l(http.HandlerFunc(s.flashcards))).Methods(http.MethodGet)
 
 	// for static pages e.g. javascript

@@ -38,16 +38,17 @@ class APIServer(BaseHTTPRequestHandler):
         self.wfile.write(respJson.encode('utf-8'))
 
 class CmdLineProto():
-    #Protocol
-    # READY\n       - ready to read from stdin until "EOF" on line by itself
-    # request       - caller sends json object of Request type
-    # EOJ\n         - caller sends this on line by itself to indicate preceding line(s) to be translated
-    # ACCEPTED nBytes   - translation was successful. nBytes is number of bytes to read for Response.
-    # REJECTED <.error> - problem with the request
-
     EOJ = "EOJ\n"
 
     def handle(self, argos):
+        print('''    #Protocol
+                   # READY\\n       - ready to read from stdin until "EOJ" on line by itself
+                   # request       - caller sends json object of Request type
+                   # EOJ\\n         - caller sends this on line by itself to indicate preceding line(s) to be translated
+                   # ACCEPTED nBytes   - translation was successful. nBytes is number of bytes to read for Response.
+                   # REJECTED <.error> - problem with the request
+        ''')
+
         # loop forever
         print("READY")
         data=''
@@ -123,7 +124,7 @@ def webServer(argos, listen):
     try:
         webServer.serve_forever()
     except KeyboardInterrupt:
-        pass
+        print('interrupt')
 
     webServer.server_close()
     print("Server stopped.")
@@ -134,10 +135,13 @@ def cmdLine(argos):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--listen", type=str, default="localhost:6001")
+    parser.add_argument("--listen", type=str, default="localhost:6001", help="start the REST API server")
+    parser.add_argument("--console", action='store_true', help="translate from stdin")
     args = parser.parse_args()
 
     argos = Argos()
 
-    webServer(argos, args.listen)
-    #cmdLine(argos)
+    if args.console == False:
+        webServer(argos, args.listen)
+    else:
+        cmdLine(argos)
