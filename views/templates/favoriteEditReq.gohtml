@@ -1,0 +1,26 @@
+<div style="display:none;" id="SourceInfo">template/favoritesEditReq.gohtml</div>
+
+<div id="favorites-form-body" class="">
+    <form hx-put="/favorite/{{.ID}}">
+        <div class="mb-6">
+            <label for="sourceEn" class="block mb-2">Import Language </label>
+            <input id="sourceEn" type="text" name="srclang" value="{{.SourceLang}}" size="2" class="block mb-2 rounded-lg text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+        </div>
+        <div class="mb-6">
+            <label for="source" class="block mb-2">Source </label>
+            <input id="source" type="text" name="source" value="{{.Source}}" size="25" class="block mb-2 rounded-lg">
+        </div>
+        <div class="mb-6">
+            <label for="targets" class="block mb-2">Translations </label>
+            <textarea id="targets" cols="25" rows="6" name="targets" class="block mb-2">{{favAltsJoin .}}</textarea>
+        </div>
+
+        <div class="flex px-4 mt-4">
+            <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
+                    id="save-button">
+                Save Favorite
+            </button>
+        </div>
+
+    </form>
+</div>

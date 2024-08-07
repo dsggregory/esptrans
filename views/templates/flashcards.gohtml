@@ -52,6 +52,11 @@
                 </a>
                 &nbsp; | &nbsp;
                 <a id="delfc" class="underline cursor-pointer text-blue-600 hover:text-blue-800"
+                   hx-get="/favorite/{{.ID}}/edit" hx-target="#main" title="edit the favorite">
+                    Edit
+                </a>
+                &nbsp; | &nbsp;
+                <a id="delfc" class="underline cursor-pointer text-blue-600 hover:text-blue-800"
                    hx-delete="/favorite/{{.ID}}" hx-target="#main" title="removes an unnecessary or erroneous favorite from the database">
                     Delete
                 </a>

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"html/template"
 	"math/rand"
 	"net/http"
@@ -186,7 +187,7 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 
 	values, accept := GetRequestParams(r)
 
-	var fav favorites.Favorite
+	var fav *favorites.Favorite
 	var err error
 	ids, ok := values["id"]
 	if ok {
@@ -196,7 +197,7 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		fav, err = s.db.SelectFavorite(id)
+		fav, err = s.db.SelectFavorite(uint(id))
 	} else {
 		fav, err = s.db.SelectRandomFavorite()
 	}
@@ -206,7 +207,7 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fcResp := s.flashcardResponse(fav, values)
+	fcResp := s.flashcardResponse(*fav, values)
 
 	// respond
 	accept = NegotiateContentType(r, []string{CtAny, CtJson, CtHtml}, accept)
@@ -219,14 +220,79 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) favoritesEdit(w http.ResponseWriter, r *http.Request) {
-	id, err := GetRequestVarInt(r, "id")
+func (s *Server) favoriteEdit(w http.ResponseWriter, r *http.Request) {
+	id, err := GetRequestVarUint(r, "id")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	_ = id // TODO - finish
-	_ = s.renderTemplate(w, "favoritesImportReq.gohtml", nil)
+
+	fav, err := s.db.SelectFavorite(id)
+	if err != nil {
+		logrus.WithError(err).Error("select failed")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_ = s.renderTemplate(w, "favoriteEditReq.gohtml", fav)
+}
+
+func (s *Server) favoriteEditSave(w http.ResponseWriter, r *http.Request) {
+	id, err := GetRequestVarUint(r, "id")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	infav, err := s.db.SelectFavorite(id)
+	if err != nil {
+		logrus.WithError(err).Error("select failed")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	values, _ := GetRequestParams(r)
+
+	// srclang source targets
+	srclang, ok := values["srclang"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	source, ok := values["source"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	targets, ok := values["targets"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	fav := favorites.Favorite{
+		Model: gorm.Model{
+			ID:        uint(id),
+			CreatedAt: infav.CreatedAt,
+			UpdatedAt: infav.UpdatedAt,
+		},
+		SourceLang: srclang[0],
+		TargetLang: infav.TargetLang,
+		Source:     source[0],
+		Target:     strings.Split(targets[0], "\n"),
+	}
+	if len(fav.Target) > 1 && fav.Target[len(fav.Target)-1] == "" {
+		fav.Target = fav.Target[0 : len(fav.Target)-2]
+	}
+
+	err = s.db.UpdateFavorite(&fav)
+	if err != nil {
+		logrus.WithError(err).Error("update failed")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	fcResp := s.flashcardResponse(fav, values)
+	_ = s.renderTemplate(w, "flashcards.gohtml", fcResp)
 }
 
 func (s *Server) favorites(w http.ResponseWriter, r *http.Request) {
@@ -271,7 +337,7 @@ func (s *Server) favoritesDoImport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) favoriteDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := GetRequestVarInt(r, "id")
+	id, err := GetRequestVarUint(r, "id")
 	if err != nil {
 		logrus.Error("id required")
 		w.WriteHeader(http.StatusBadRequest)
@@ -281,7 +347,7 @@ func (s *Server) favoriteDelete(w http.ResponseWriter, r *http.Request) {
 
 	// respond with the next flashcard
 	fav, _ := s.db.SelectRandomFavorite()
-	fcResp := s.flashcardResponse(fav, nil)
+	fcResp := s.flashcardResponse(*fav, nil)
 	// respond
 	accept := NegotiateContentType(r, []string{CtAny, CtJson, CtHtml}, CtHtml)
 	switch accept {
@@ -346,8 +412,8 @@ func (s *Server) newRouter() error {
 	s.mux.Handle("/flashcard/{id}", l(http.HandlerFunc(s.flashcards))).Methods(http.MethodGet)
 	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favorites))).Methods(http.MethodGet)
 	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favoritesDoImport))).Methods(http.MethodPost)
-	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoritesEdit))).Methods(http.MethodGet)
-	s.mux.Handle("/favorite/{id}/edit", l(http.HandlerFunc(s.favoritesEdit))).Methods(http.MethodGet)
+	s.mux.Handle("/favorite/{id}/edit", l(http.HandlerFunc(s.favoriteEdit))).Methods(http.MethodGet)
+	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoriteEditSave))).Methods(http.MethodPut)
 	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoriteDelete))).Methods(http.MethodDelete)
 
 	// for static pages e.g. javascript

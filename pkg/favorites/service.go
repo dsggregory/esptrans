@@ -76,27 +76,56 @@ func (s *DBService) SelectRandomFavorites(limit int) ([]Favorite, error) {
 }
 
 // SelectRandomFavorite select ONE favorite for flash cards
-func (s *DBService) SelectRandomFavorite() (Favorite, error) {
+func (s *DBService) SelectRandomFavorite() (*Favorite, error) {
 	// SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)
 	var fav Favorite
 
 	err := s.db.Raw("SELECT * FROM favorites WHERE id IN (SELECT id FROM favorites WHERE deleted_at is null ORDER BY RANDOM() LIMIT 1)").Find(&fav).Error
-	return fav, err
+	return &fav, err
 }
 
 // SelectFavorite select a specific favorite
-func (s *DBService) SelectFavorite(id int) (Favorite, error) {
+func (s *DBService) SelectFavorite(id uint) (*Favorite, error) {
 	var fav Favorite
 
 	err := s.db.Where("id=?", id).Find(&fav).Error
-	return fav, err
+	return &fav, err
 }
 
 // DeleteFavorite delete a specific favorite
-func (s *DBService) DeleteFavorite(id int) error {
+func (s *DBService) DeleteFavorite(id uint) error {
 	var fav Favorite
 
 	fav.ID = uint(id)
 	err := s.db.Delete(&fav).Error
 	return err
+}
+
+func (s *DBService) UpdateFavorite(fav *Favorite) error {
+	if fav.ID == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	havc, err := s.SelectFavorite(fav.ID)
+	if havc == nil {
+		if err == nil {
+			return gorm.ErrRecordNotFound
+		} else {
+			return err
+		}
+	}
+
+	tx := s.db.Begin()
+	txwhere := tx.Where("id=?", fav.ID)
+	if err := txwhere.Save(fav).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := txwhere.Find(fav).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+
 }

@@ -99,16 +99,26 @@ func GetRequestParams(r *http.Request) (url.Values, string) {
 	return values, defaultAccept
 }
 
-func GetRequestVarInt(r *http.Request, varName string) (int, error) {
+func rvUint(r *http.Request, varName string) (uint, error) {
 	vars := mux.Vars(r)
 	idStr, ok := vars[varName]
 	if !ok {
-		return -1, fmt.Errorf("request var %s not found", varName)
+		return uint(0), fmt.Errorf("request var %s not found", varName)
 	}
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return -1, fmt.Errorf("request var %s not an int", varName)
+		return 0, fmt.Errorf("request var %s not an int", varName)
 	}
 
-	return id, nil
+	return uint(id), nil
+}
+func GetRequestVarInt(r *http.Request, varName string) (int, error) {
+	x, err := rvUint(r, varName)
+	if err == nil {
+		return int(x), nil
+	}
+	return 0, err
+}
+func GetRequestVarUint(r *http.Request, varName string) (uint, error) {
+	return rvUint(r, varName)
 }

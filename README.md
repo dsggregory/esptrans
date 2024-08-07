@@ -3,6 +3,8 @@ This is an app to translate to/from english->spanish using the free [Argos Trans
 
 The web server is built using TailwindCSS and HTMX.
 
+> WARNING: there is no authentication for this app. It is a utility intended to be run on localhost or a restricted network. No PII data is stored.
+
 ## Caveat
 There are MUCH better translation solutions online. I highly recommend [DeepL](https://www.deepl.com/en/translator). It has many free features, but you need to pay to store favorite lists. If you are looking for a single tool to translate, speak, integrate with your OS, et al., then DeepL is for you.
 
