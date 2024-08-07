@@ -38,6 +38,7 @@ func main() {
 	o_lang := flag.Bool("r", false, "Translate es=>en. Default is inverse.")
 	o_verbose := flag.Bool("v", false, "Verbose output")
 	o_nosave := flag.Bool("n", false, "Do not save to favorites")
+	o_noargos := flag.Bool("x", false, "Do not start an argos API server")
 
 	err := config.ReadConfig(cfg)
 	if err != nil {
@@ -66,13 +67,22 @@ func main() {
 		logrus.WithField("dsn", cfg.FavoritesDBURL).Debug("Connected to favorites database")
 	}
 
-	app.trSvc, err = translate.New(
-		translate.WithDB(app.db),
-		translate.WithAPIURL(cfg.LibreTranslateURL),
-	)
+	if o_noargos != nil && *o_noargos == true {
+		app.trSvc, err = translate.New(
+			translate.WithDB(app.db),
+			translate.WithAPIURL(cfg.LibreTranslateURL),
+			translate.WithoutArgos(),
+		)
+	} else {
+		app.trSvc, err = translate.New(
+			translate.WithDB(app.db),
+			translate.WithAPIURL(cfg.LibreTranslateURL),
+		)
+	}
 	if err != nil {
 		logrus.WithError(err).Fatal("unable to init the translation service")
 	}
+	defer app.trSvc.Close()
 
 	// input from cmdline or stdin
 	var data []byte

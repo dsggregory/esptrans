@@ -1,0 +1,13 @@
+<div style="display:none;" id="SourceInfo">template/favoritesImportResp.gohtml</div>
+
+<div id="favorites-import-response-body" class="">
+    <div class="flex items-center">
+        {{if not .}}
+            Successfully imported all requested items!
+        {{else}}
+            {{range .}}
+                . <br/>
+            {{end}}
+        {{end}}
+    </div>
+</div>

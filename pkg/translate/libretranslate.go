@@ -67,6 +67,19 @@ func (l *LTClient) Auto(text string) (*Response, error) {
 	return l.translate(text, Any, Any)
 }
 
+// Health check the health of the server
+func (l *LTClient) Health() error {
+	resp, err := http.Get(l.LibreTranslateURL + "/frontend/settings")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(resp.Status)
+	}
+	return nil
+}
+
 // New creates an instance of this service
 func NewLibreTranslate(url string) *LTClient {
 	return &LTClient{LibreTranslateURL: url}

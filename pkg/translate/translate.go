@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // Translate an instance of this service
@@ -130,6 +131,20 @@ func (t *Translate) manageArgos() error {
 		t.done <- err
 		close(t.done)
 	}()
+
+	// wait on the service to be available
+	var isUp bool
+	for i := 0; i < 5; i++ {
+		if err := t.LT.Health(); err != nil {
+			time.Sleep(2 * time.Second)
+		} else {
+			isUp = true
+			break
+		}
+	}
+	if !isUp {
+		logrus.Warn("timed-out waiting on Argos service to become available")
+	}
 
 	logrus.WithField("addr", u.Host).Info("started our argos API server")
 	return nil

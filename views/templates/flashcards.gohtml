@@ -50,6 +50,11 @@
                 hx-include="[name='quizLanguage']">
                     Next
                 </a>
+                &nbsp; | &nbsp;
+                <a id="delfc" class="underline cursor-pointer text-blue-600 hover:text-blue-800"
+                   hx-delete="/favorite/{{.ID}}" hx-target="#main" title="removes an unnecessary or erroneous favorite from the database">
+                    Delete
+                </a>
             </div>
             <h4 class="text-2xl font-semibold text-gray-700 cursor-pointer">{{ .Source }}</h4>
             <div id="answer" class="hidden text-gray-500 mt-4">

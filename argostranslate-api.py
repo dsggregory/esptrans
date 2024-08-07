@@ -17,6 +17,16 @@ import time
 import argparse
 
 class APIServer(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # simulate libretranslate /frontend/settings endpoint to validate health
+        if self.path == '/health' or self.path == '/frontend/settings':
+            self.send_response(200)
+            self.send_header("Content-type", "text/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write('{"status":"ok"}'.encode('utf-8'))
+        else:
+            self.send_response(500)
+            self.end_headers()
     def do_POST(self):
         try:
             content_len = int(self.headers.get('Content-Length'))

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"esptrans/pkg/config"
@@ -13,6 +15,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -154,13 +157,15 @@ func (s *Server) flashcardResponse(fav favorites.Favorite, values url.Values) Fl
 	if quizLanguage != fav.SourceLang {
 		// use a random item from Target
 		randTarget := rand.Intn(len(fav.Target))
+		target := append([]string{fav.Source}, fav.Target...) // mixed languages - maybe ok?
 		// reverse it
 		rfav := favorites.Favorite{
 			SourceLang: fav.TargetLang,
 			TargetLang: fav.SourceLang,
 			Source:     fav.Target[randTarget],
-			Target:     []string{fav.Source},
+			Target:     target,
 		}
+		rfav.ID = fav.ID
 		fav = rfav
 	}
 
@@ -181,7 +186,20 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 
 	values, accept := GetRequestParams(r)
 
-	fav, err := s.db.SelectRandomFavorite()
+	var fav favorites.Favorite
+	var err error
+	ids, ok := values["id"]
+	if ok {
+		id, err := strconv.Atoi(ids[0])
+		if err != nil {
+			logrus.Error("id param malformed")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		fav, err = s.db.SelectFavorite(id)
+	} else {
+		fav, err = s.db.SelectRandomFavorite()
+	}
 	if err != nil {
 		logrus.WithError(err).Error("select failed")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -192,6 +210,80 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 
 	// respond
 	accept = NegotiateContentType(r, []string{CtAny, CtJson, CtHtml}, accept)
+	switch accept {
+	case CtJson:
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(fcResp)
+	case CtHtml, CtAny:
+		_ = s.renderTemplate(w, "flashcards.gohtml", fcResp)
+	}
+}
+
+func (s *Server) favoritesEdit(w http.ResponseWriter, r *http.Request) {
+	id, err := GetRequestVarInt(r, "id")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	_ = id // TODO - finish
+	_ = s.renderTemplate(w, "favoritesImportReq.gohtml", nil)
+}
+
+func (s *Server) favorites(w http.ResponseWriter, r *http.Request) {
+	_ = s.renderTemplate(w, "favoritesImportReq.gohtml", nil)
+}
+
+func (s *Server) favoritesDoImport(w http.ResponseWriter, r *http.Request) {
+	values, _ := GetRequestParams(r)
+
+	data, ok := values["data"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	lang, ok := values["srclang"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	inlang := lang[0]
+	outlang := translate.English
+	if inlang == translate.English {
+		outlang = translate.Spanish
+	}
+	opts := translate.TranslateOptions{
+		InLang:       inlang,
+		OutLang:      outlang,
+		SkipFavorite: false,
+	}
+
+	respErrors := []string{}
+	// data is `lang` text to be translated per line of input - no multiline translated
+	scanner := bufio.NewScanner(bytes.NewBufferString(data[0]))
+	for scanner.Scan() {
+		_, err := s.trSvc.Translate(&opts, strings.Trim(scanner.Text(), " \t\r\n"))
+		if err != nil {
+			respErrors = append(respErrors, err.Error())
+		}
+	}
+
+	_ = s.renderTemplate(w, "favoritesImportResp.gohtml", respErrors)
+}
+
+func (s *Server) favoriteDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := GetRequestVarInt(r, "id")
+	if err != nil {
+		logrus.Error("id required")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	err = s.db.DeleteFavorite(id)
+
+	// respond with the next flashcard
+	fav, _ := s.db.SelectRandomFavorite()
+	fcResp := s.flashcardResponse(fav, nil)
+	// respond
+	accept := NegotiateContentType(r, []string{CtAny, CtJson, CtHtml}, CtHtml)
 	switch accept {
 	case CtJson:
 		w.Header().Set("Content-Type", "application/json")
@@ -251,6 +343,12 @@ func (s *Server) newRouter() error {
 
 	s.mux.Handle("/translate", l(http.HandlerFunc(s.translate))).Methods(http.MethodGet, http.MethodPost)
 	s.mux.Handle("/flashcards", l(http.HandlerFunc(s.flashcards))).Methods(http.MethodGet)
+	s.mux.Handle("/flashcard/{id}", l(http.HandlerFunc(s.flashcards))).Methods(http.MethodGet)
+	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favorites))).Methods(http.MethodGet)
+	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favoritesDoImport))).Methods(http.MethodPost)
+	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoritesEdit))).Methods(http.MethodGet)
+	s.mux.Handle("/favorite/{id}/edit", l(http.HandlerFunc(s.favoritesEdit))).Methods(http.MethodGet)
+	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoriteDelete))).Methods(http.MethodDelete)
 
 	// for static pages e.g. javascript
 	s.mux.PathPrefix("/").Handler(l(http.FileServer(http.Dir(s.cfg.StaticPages))))

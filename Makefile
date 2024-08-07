@@ -1,5 +1,6 @@
 all::
 	go build -o esptrans cmd/esptrans/main.go
+	go build -o server cmd/server/main.go
 test:
 	go test -v -race ./...
 tailwindcss:
