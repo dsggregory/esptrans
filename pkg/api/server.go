@@ -157,7 +157,10 @@ func (s *Server) flashcardResponse(fav favorites.Favorite, values url.Values) Fl
 
 	if quizLanguage != fav.SourceLang {
 		// use a random item from Target
-		randTarget := rand.Intn(len(fav.Target))
+		randTarget := 0
+		if len(fav.Target) > 1 {
+			randTarget = rand.Intn(len(fav.Target))
+		}
 		target := append([]string{fav.Source}, fav.Target...) // mixed languages - maybe ok?
 		// reverse it
 		rfav := favorites.Favorite{
@@ -281,8 +284,13 @@ func (s *Server) favoriteEditSave(w http.ResponseWriter, r *http.Request) {
 		Source:     source[0],
 		Target:     strings.Split(targets[0], "\n"),
 	}
+	if len(fav.Target) == 0 {
+		logrus.Error("favorite target is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	if len(fav.Target) > 1 && fav.Target[len(fav.Target)-1] == "" {
-		fav.Target = fav.Target[0 : len(fav.Target)-2]
+		fav.Target = fav.Target[0 : len(fav.Target)-1]
 	}
 
 	err = s.db.UpdateFavorite(&fav)
