@@ -8,7 +8,10 @@
 </script>
 
 <div id="flashcards-body" class="pt-2 mt-2">
-    {{range .}}
+    <div>
+        <input type="checkbox" {{langIsChecked .QuizLanguage "es"}} id="quizLanguage" name="quizLanguage" value="es">
+        <label for="quizLanguage" class="">Quiz in Spanish?</label>
+    </div>
     <div class="flex items-center">
         <div class="bg-indigo-600 bg-opacity-75 rounded-full">
             <svg class="w-8 h-8 text-white" viewBox="0 0 28 30" fill="none"
@@ -42,7 +45,9 @@
                     </a>
                     &nbsp; | &nbsp;
                 </div>
-                <a id="nextfc" class="underline cursor-pointer text-blue-600 hover:text-blue-800" hx-get="/flashcards?limit=1" hx-target="#main">
+                <a id="nextfc" class="underline cursor-pointer text-blue-600 hover:text-blue-800"
+                   hx-get="/flashcards?limit=1" hx-target="#main"
+                hx-include="[name='quizLanguage']">
                     Next
                 </a>
             </div>
@@ -57,9 +62,5 @@
                 </ul>
             </div>
         </div>
-        </div>
     </div>
-</div>
-
-    {{end}}
 </div>

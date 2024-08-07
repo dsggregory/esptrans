@@ -20,8 +20,9 @@ type Translate struct {
 
 // argosAPIProc our argos API process
 type argosAPIProc struct {
-	cmd  *exec.Cmd
-	done chan error
+	scriptPath string
+	cmd        *exec.Cmd
+	done       chan error
 }
 
 type TranslateOptions struct {
@@ -106,7 +107,7 @@ func (t *Translate) manageArgos() error {
 	if err != nil {
 		return fmt.Errorf("%w; python3", err)
 	}
-	script := "./argostranslate-api.py"
+	script := t.scriptPath
 	if _, err := os.Stat(script); errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("%w; %s", err, script)
 	}
@@ -153,15 +154,57 @@ func (t *Translate) Close() error {
 	return nil
 }
 
+// WithDB a functional option to specify the favorites DB service to use
+func WithDB(db *favorites.DBService) func(*Translate) {
+	return func(t *Translate) {
+		t.DB = db
+	}
+}
+
+// WithAPIURL a functional option to specify where to run the Argos API
+func WithAPIURL(apiURL string) func(*Translate) {
+	return func(t *Translate) {
+		t.LT = NewLibreTranslate(apiURL)
+	}
+}
+
+// WithArgosScript a functional option to specify the location of our Argos python script. The default is "./argostranslate-api.py".
+func WithArgosScript(scriptPath string) func(*Translate) {
+	return func(t *Translate) {
+		t.scriptPath = scriptPath
+	}
+}
+
+// WithoutArgos a functional option to indicate we will not manage the Argos/LibreTranslate API server. Can use this with testing when mocking that service.
+func WithoutArgos() func(*Translate) {
+	return func(t *Translate) {
+		t.scriptPath = ""
+	}
+}
+
 // New creates a new instance of the translation API wrapper
-func New(db *favorites.DBService, apiURL string) (*Translate, error) {
+func New(options ...func(*Translate)) (*Translate, error) {
 	t := &Translate{
-		DB: db,
-		LT: NewLibreTranslate(apiURL),
+		DB: nil,
+		LT: nil,
+		argosAPIProc: argosAPIProc{
+			scriptPath: "./argostranslate-api.py",
+		},
 	}
 
-	if err := t.manageArgos(); err != nil {
-		return nil, err
+	for _, option := range options {
+		option(t)
+	}
+	if t.LT == nil {
+		return nil, errors.New("WithAPIURL is a required option")
+	}
+
+	if t.scriptPath != "" {
+		if err := t.manageArgos(); err != nil {
+			return nil, err
+		}
+	} else {
+		logrus.Warn("not managing argos API server, by config")
 	}
 
 	return t, nil

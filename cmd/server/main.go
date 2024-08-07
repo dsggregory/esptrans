@@ -52,7 +52,10 @@ func main() {
 		logrus.Warning("no favorites database configured")
 	}
 
-	app.trSvc, err = translate.New(app.db, cfg.LibreTranslateURL)
+	app.trSvc, err = translate.New(
+		translate.WithDB(app.db),
+		translate.WithAPIURL(cfg.LibreTranslateURL),
+	)
 	if err != nil {
 		logrus.WithError(err).Fatal("unable to init translation service")
 	}

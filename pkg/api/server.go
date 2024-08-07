@@ -10,8 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"html/template"
+	"math/rand"
 	"net/http"
-	"strconv"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -135,6 +136,42 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type FlashcardResponse struct {
+	QuizLanguage string `json:"quizLanguage"`
+	favorites.Favorite
+}
+
+// flashcardResponse based on the quiz language, arrange the flashcard result
+func (s *Server) flashcardResponse(fav favorites.Favorite, values url.Values) FlashcardResponse {
+	var quizLanguage string
+	ql, ok := values["quizLanguage"]
+	if !ok {
+		quizLanguage = translate.English
+	} else {
+		quizLanguage = ql[0]
+	}
+
+	if quizLanguage != fav.SourceLang {
+		// use a random item from Target
+		randTarget := rand.Intn(len(fav.Target))
+		// reverse it
+		rfav := favorites.Favorite{
+			SourceLang: fav.TargetLang,
+			TargetLang: fav.SourceLang,
+			Source:     fav.Target[randTarget],
+			Target:     []string{fav.Source},
+		}
+		fav = rfav
+	}
+
+	fcResp := FlashcardResponse{
+		QuizLanguage: quizLanguage,
+		Favorite:     fav,
+	}
+
+	return fcResp
+}
+
 func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	if s.db == nil {
 		logrus.Error("Database not defined for flashcards")
@@ -143,33 +180,24 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	values, accept := GetRequestParams(r)
-	_ = values
 
-	limit := 5
-	if ls, ok := values["limit"]; ok {
-		l, err := strconv.Atoi(ls[0])
-		if err != nil || l <= 0 {
-			logrus.WithField("state", "form").Error("limit is wrong type")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		limit = l
-	}
-	favs, err := s.db.SelectRandomFavorites(limit)
+	fav, err := s.db.SelectRandomFavorite()
 	if err != nil {
 		logrus.WithError(err).Error("select failed")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	fcResp := s.flashcardResponse(fav, values)
+
 	// respond
 	accept = NegotiateContentType(r, []string{CtAny, CtJson, CtHtml}, accept)
 	switch accept {
 	case CtJson:
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(favs)
+		_ = json.NewEncoder(w).Encode(fcResp)
 	case CtHtml, CtAny:
-		_ = s.renderTemplate(w, "flashcards.gohtml", favs)
+		_ = s.renderTemplate(w, "flashcards.gohtml", fcResp)
 	}
 }
 
@@ -252,6 +280,8 @@ func NewServer(ctx context.Context, cfg *config.AppSettings, mdb *favorites.DBSe
 	}
 
 	//s.LogRoutes()
+
+	rand.Seed(time.Now().UnixNano())
 
 	return s, nil
 }

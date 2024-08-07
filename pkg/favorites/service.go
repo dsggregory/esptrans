@@ -74,3 +74,12 @@ func (s *DBService) SelectRandomFavorites(limit int) ([]Favorite, error) {
 	err := s.db.Raw("SELECT * FROM favorites WHERE id IN (SELECT id FROM favorites ORDER BY RANDOM() LIMIT ?)", limit).Find(&favs).Error
 	return favs, err
 }
+
+// SelectRandomFavorite select ONE favorite for flash cards
+func (s *DBService) SelectRandomFavorite() (Favorite, error) {
+	// SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)
+	var fav Favorite
+
+	err := s.db.Raw("SELECT * FROM favorites WHERE id IN (SELECT id FROM favorites ORDER BY RANDOM() LIMIT 1)").Find(&fav).Error
+	return fav, err
+}

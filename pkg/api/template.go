@@ -41,9 +41,9 @@ func (s *Server) tFavAltsJoin(fav favorites.Favorite) string {
 
 // tLangIsChecked gotemplate function to return a safe string that can be added as a html attribute
 func (s *Server) tLangIsChecked(lang string, inLang string) template.HTMLAttr {
-	attr := template.HTMLAttr(`checked="checked"`)
-	if lang != inLang {
-		attr = ""
+	var attr template.HTMLAttr
+	if lang == inLang {
+		attr = template.HTMLAttr(`checked="checked"`)
 	}
 	return attr
 }

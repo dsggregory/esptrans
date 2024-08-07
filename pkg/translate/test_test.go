@@ -76,7 +76,10 @@ func TestTranslate(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		trSvc, err := New(nil, ts.URL)
+		trSvc, err := New(
+			WithAPIURL(ts.URL),
+			WithoutArgos(), // not needed as it's mocked above
+		)
 		So(err, ShouldBeNil)
 
 		opts := &TranslateOptions{
