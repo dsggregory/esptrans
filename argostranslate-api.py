@@ -104,11 +104,13 @@ class Argos:
         tr = argostranslate.translate.get_translation_from_codes(req['source'], req['target'])
         hypotheses = tr.hypotheses(req['q'])
 
-        nAlts = req['alternatives'] + 1
+        nAlts = 3
+        if 'alternatives' in req:
+            nAlts = req['alternatives']
         hs = []
         for x in hypotheses:
             hs.append(x.value)
-        alts = hs[1:nAlts] # remove what we are using for TranslatedText (the best score) and any extras
+        alts = hs[1:nAlts+1] # remove what we are using for TranslatedText (the best score) and any extras
         resp = {
             "input": req['q'],
             "detectedLanguage": {"Language": req['source']},
