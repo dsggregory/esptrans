@@ -61,16 +61,19 @@
                     Delete
                 </a>
             </div>
-            <h4 class="text-2xl font-semibold text-gray-700 cursor-pointer">{{ .Source }}</h4>
-            <div id="answer" class="hidden text-gray-500 mt-4">
-                <b>Answer:</b>
-                <ul class="list-inside list-disc ml-4">
-                    {{range .Target }}
-                        <li class="space-y-1"><i>{{.}}</i></li>
-                        <br/>
-                    {{end}}
-                </ul>
-            </div>
+        </div>
+    </div>
+
+    <div class="max-w-2xl p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+        <h4 class="text-2xl font-semibold text-gray-700 cursor-pointer" onclick="reveal()">{{ .Source }}</h4>
+        <div id="answer" class="hidden text-gray-500 mt-4">
+            <b>Answer:</b>
+            <ul class="list-inside list-disc ml-4">
+                {{range .Target }}
+                    <li class="space-y-1"><i>{{.}}</i></li>
+                    <br/>
+                {{end}}
+            </ul>
         </div>
     </div>
 </div>
