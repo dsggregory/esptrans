@@ -88,7 +88,15 @@ func (s *DBService) SelectRandomFavorite() (*Favorite, error) {
 func (s *DBService) SelectFavorite(id uint) (*Favorite, error) {
 	var fav Favorite
 
-	err := s.db.Where("id=?", id).Find(&fav).Error
+	err := s.db.Where("id=?", id).First(&fav).Error
+	return &fav, err
+}
+
+// SelectFavoriteSource select a specific favorite by source column
+func (s *DBService) SelectFavoriteSource(source string) (*Favorite, error) {
+	var fav Favorite
+
+	err := s.db.Where("source=?", source).First(&fav).Error
 	return &fav, err
 }
 

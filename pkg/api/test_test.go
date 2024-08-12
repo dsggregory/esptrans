@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -99,6 +100,50 @@ func TestUI(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(resp.SourceLang, ShouldEqual, "en")
 		})
+	})
+	Convey("Try endpoints", t, func() {
+		db, fp, err := newTestDatabase()
+		So(err, ShouldBeNil)
+		defer os.Remove(fp.Name())
+		ctx := context.Background()
+		cfg := config.AppSettings{
+			CommonConfig: config.CommonConfig{
+				Debug:             "",
+				LibreTranslateURL: "",
+				FavoritesDBURL:    "",
+			},
+			APIConfig: config.APIConfig{
+				ListenAddr:  "",
+				StaticPages: "../../views",
+			},
+		}
+		s, err := NewServer(ctx, &cfg, db, nil)
+		So(err, ShouldBeNil)
+
+		req, err := http.NewRequest("POST", "/edit?fav=1", http.NoBody)
+		So(err, ShouldBeNil)
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(s.favoriteEdit)
+		handler.ServeHTTP(rr, req)
+		So(rr.Code, ShouldEqual, http.StatusOK)
+
+		data := url.Values{"fav": []string{"2"}}
+		req, err = http.NewRequest("POST", "/edit", strings.NewReader(data.Encode()))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		So(err, ShouldBeNil)
+		rr = httptest.NewRecorder()
+		handler = http.HandlerFunc(s.favoriteEdit)
+		handler.ServeHTTP(rr, req)
+		So(rr.Code, ShouldEqual, http.StatusOK)
+
+		data = url.Values{"fav": []string{"tomaré"}}
+		req, err = http.NewRequest("POST", "/edit", strings.NewReader(data.Encode()))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		So(err, ShouldBeNil)
+		rr = httptest.NewRecorder()
+		handler = http.HandlerFunc(s.favoriteEdit)
+		handler.ServeHTTP(rr, req)
+		So(rr.Code, ShouldEqual, http.StatusOK)
 	})
 	SkipConvey("Test UI translate", t, func() {
 		// make a temp copy of the fixtures DB file

@@ -1,34 +1,56 @@
 <div style="display:none;" id="SourceInfo">template/favoritesImportReq.gohtml</div>
 
-<div id="favorites-form-body" class="">
-    <div class="flex items-center">
-        Import words or phrases into the favorites database to later be used when generating flash cards.<br/>
-        For each word or phrase, translate from the selected Import Language and store in the favorites database.
-    </div>
-    <form hx-post="/favorites" hx-target="#results" hx-swap="innerHTML">
-        <div class="flex items-center">
-            <b>Import Language: </b>
+<div id="favorites-body">
+    <div id="favorites-search-body" class="">
+        <form hx-post="/favorite/edit" hx-target="#favorites-body" hx-swap="innerHTML">
             <div class="flex py-4 px-2">
-                <input id="sourceEn" type="radio" name="srclang" value="en" checked class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                <label for="sourceEn" class="">English</label>
+                <div class="flex items-center px-2">
+                    <label for="favid">Favorite ID/Name</label>
+                    <input id="favid" type="text" name="fav">
+                </div>
+                <div class="flex px-4">
+                    <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
+                            id="edit-search-button">
+                        Find
+                    </button>
+                </div>
             </div>
-            <div class="flex py-4 px-2">
-                <input id="sourceEs" type="radio" name="srclang" value="es" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                <label for="sourceEs" class="">Spanish</label>
-            </div>
-
-            <div class="flex px-4">
-                <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
-                        id="import-button">
-                    Import
-                </button>
-            </div>
-        </div>
-        <div class="flex items-center">
-            <textarea name="data" placeholder="One word or phrase per line" cols="40" rows="12" ></textarea>
-        </div>
-    </form>
-
-    <div class="flex items-center" id="results">
+        </form>
     </div>
+
+    <hr/>
+
+    <div id="favorites-import-body" class="">
+        <div class="flex items-center">
+            Import words or phrases into the favorites database to later be used when generating flash cards.<br/>
+            For each word or phrase, translate from the selected Import Language and store in the favorites database.
+        </div>
+        <form hx-post="/favorites" hx-target="#results" hx-swap="innerHTML">
+            <div class="flex items-center">
+                <b>Import Language: </b>
+                <div class="flex py-4 px-2">
+                    <input id="sourceEn" type="radio" name="srclang" value="en" checked class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="sourceEn" class="">English</label>
+                </div>
+                <div class="flex py-4 px-2">
+                    <input id="sourceEs" type="radio" name="srclang" value="es" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="sourceEs" class="">Spanish</label>
+                </div>
+
+                <div class="flex px-4">
+                    <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
+                            id="import-button">
+                        Import
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center">
+                <textarea name="data" placeholder="One word or phrase per line" cols="40" rows="12" ></textarea>
+            </div>
+        </form>
+
+        <div class="flex items-center" id="results">
+        </div>
+    </div>
+
 </div>

@@ -224,13 +224,31 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) favoriteEdit(w http.ResponseWriter, r *http.Request) {
-	id, err := GetRequestVarUint(r, "id")
+	vars, _ := GetRequestParams(r)
+	fid := vars.Get("fav") // id or 'source'
+
+	var source string
+	id, err := strconv.Atoi(fid)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		if len(fid) > 0 {
+			source = fid
+		} else {
+			mv := mux.Vars(r)
+			fid = mv["id"]
+			id, err = strconv.Atoi(fid)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
 	}
 
-	fav, err := s.db.SelectFavorite(id)
+	var fav *favorites.Favorite
+	if id > 0 {
+		fav, err = s.db.SelectFavorite(uint(id))
+	} else {
+		fav, err = s.db.SelectFavoriteSource(source)
+	}
 	if err != nil {
 		logrus.WithError(err).Error("select failed")
 		w.WriteHeader(http.StatusBadRequest)
@@ -421,6 +439,7 @@ func (s *Server) newRouter() error {
 	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favorites))).Methods(http.MethodGet)
 	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favoritesDoImport))).Methods(http.MethodPost)
 	s.mux.Handle("/favorite/{id}/edit", l(http.HandlerFunc(s.favoriteEdit))).Methods(http.MethodGet)
+	s.mux.Handle("/favorite/edit", l(http.HandlerFunc(s.favoriteEdit))).Methods(http.MethodGet, http.MethodPost)
 	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoriteEditSave))).Methods(http.MethodPut)
 	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoriteDelete))).Methods(http.MethodDelete)
 

@@ -103,7 +103,11 @@ func rvUint(r *http.Request, varName string) (uint, error) {
 	vars := mux.Vars(r)
 	idStr, ok := vars[varName]
 	if !ok {
-		return uint(0), fmt.Errorf("request var %s not found", varName)
+		vals, _ := GetRequestParams(r)
+		idStr = vals.Get(varName)
+		if idStr == "" {
+			return uint(0), fmt.Errorf("request var %s not found", varName)
+		}
 	}
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
