@@ -1,11 +1,17 @@
 <div style="display:none;" id="SourceInfo">template/favoritesImportReq.gohtml</div>
 
 <div id="favorites-body">
+    <div class="flex items-center">
+        <hr class="flex-grow border-black">
+        <span class="px-3">Find</span>
+        <hr class="flex-grow border-black">
+    </div>
+
     <div id="favorites-search-body" class="">
         <form hx-post="/favorite/edit" hx-target="#favorites-body" hx-swap="innerHTML">
             <div class="flex py-4 px-2">
                 <div class="flex items-center px-2">
-                    <label for="favid">Favorite ID/Name</label>
+                    <label for="favid" class="px-2">Favorite ID/Name</label>
                     <input id="favid" type="text" name="fav">
                 </div>
                 <div class="flex px-4">
@@ -18,7 +24,11 @@
         </form>
     </div>
 
-    <hr/>
+    <div class="flex items-center">
+        <hr class="flex-grow border-black">
+        <span class="px-3">Import</span>
+        <hr class="flex-grow border-black">
+    </div>
 
     <div id="favorites-import-body" class="">
         <div class="flex items-center">

@@ -28,6 +28,10 @@ func TestTranslate(t *testing.T) {
 		}
 	})
 
+	Convey("Guess input language", t, func() {
+
+	})
+
 	Convey("Test translate", t, func() {
 		type cases struct {
 			orig     string

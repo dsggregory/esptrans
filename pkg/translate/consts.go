@@ -21,7 +21,8 @@ type Response struct {
 	Input            string   `json:"input,omitempty"`
 	Alternatives     []string `json:"alternatives"`
 	DetectedLanguage struct {
-		Language   string  `json:"language"`
+		Language string `json:"language"`
+		// Confidence represents quality of the translation. Per argostranslate, 0=no-confidence, <0=more-confidence.
 		Confidence float64 `json:"confidence"`
 	} `json:"detectedLanguage"`
 	TranslatedText string `json:"translatedText"`

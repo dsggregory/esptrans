@@ -69,13 +69,11 @@ func main() {
 
 	if o_noargos != nil && *o_noargos == true {
 		app.trSvc, err = translate.New(
-			translate.WithDB(app.db),
 			translate.WithAPIURL(cfg.LibreTranslateURL),
 			translate.WithoutArgos(),
 		)
 	} else {
 		app.trSvc, err = translate.New(
-			translate.WithDB(app.db),
 			translate.WithAPIURL(cfg.LibreTranslateURL),
 		)
 	}

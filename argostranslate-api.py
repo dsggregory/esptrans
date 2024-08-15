@@ -104,19 +104,23 @@ class Argos:
         tr = argostranslate.translate.get_translation_from_codes(req['source'], req['target'])
         hypotheses = tr.hypotheses(req['q'])
 
+        #print(hypotheses)   # DEBUG
         nAlts = 3
         if 'alternatives' in req:
             nAlts = req['alternatives']
-        hs = []
-        for x in hypotheses:
-            hs.append(x.value)
-        alts = hs[1:nAlts+1] # remove what we are using for TranslatedText (the best score) and any extras
         resp = {
             "input": req['q'],
-            "detectedLanguage": {"Language": req['source']},
-            "translatedText": hypotheses[0].value,
-            "alternatives": alts
+            "detectedLanguage": {"language": req['source'], "confidence": 0.0}
         }
+        if hypotheses is not None and len(hypotheses) > 0:
+            hs = []
+            scores = 0.0
+            for x in hypotheses:
+                hs.append(x.value)
+                scores += x.score
+            resp["detectedLanguage"]["confidence"] = scores / len(hypotheses)
+            resp["alternatives"] = hs[1:nAlts+1] # remove what we are using for TranslatedText (the best score) and any extras
+            resp["translatedText"] = hypotheses[0].value
 
         return resp
 

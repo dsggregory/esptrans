@@ -53,7 +53,6 @@ func main() {
 	}
 
 	app.trSvc, err = translate.New(
-		translate.WithDB(app.db),
 		translate.WithAPIURL(cfg.LibreTranslateURL),
 	)
 	if err != nil {

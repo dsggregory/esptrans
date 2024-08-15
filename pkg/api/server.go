@@ -76,9 +76,18 @@ func (s *Server) addHealthRoutes(l MidWareFunc) {
 	s.mux.Handle("/health/{any}", l(http.HandlerFunc(health))) // I like to configure /health/liveness as liveness probe endpoint
 }
 
+// TranslateResponse a composite struct containing all needed in translation
+type TranslateResponse struct {
+	*translate.TranslateOptions
+	*translate.Response
+}
+
 func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		trresp := translate.Response{}
+		trresp := &TranslateResponse{
+			TranslateOptions: &translate.TranslateOptions{},
+			Response:         &translate.Response{},
+		}
 		trresp.DetectedLanguage.Language = translate.English
 		_ = s.renderTemplate(w, "translationForm.gohtml", trresp)
 		return
@@ -86,20 +95,9 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 
 	// expect application/x-www-form-urlencoded
 	values, accept := GetRequestParams(r)
-	var srcLang, targetLang, trtext string
+	srcLang, targetLang := translate.English, translate.Spanish
+	var trtext string
 
-	lang, ok := values["srclang"]
-	if !ok {
-		logrus.WithField("state", "form").Error("srclang is required")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	srcLang = lang[0]
-	if srcLang == translate.English {
-		targetLang = translate.Spanish
-	} else {
-		targetLang = translate.English
-	}
 	vtxt, ok := values["input"]
 	if !ok {
 		logrus.WithField("state", "form").Error("input is required")
@@ -108,23 +106,17 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	}
 	trtext = vtxt[0]
 
-	var skipFav bool
-	skipFavStr, ok := values["skipFav"]
-	if ok && len(skipFavStr) > 0 {
-		skipFav = true
-	}
-
 	opts := translate.TranslateOptions{
-		InLang:       srcLang,
-		OutLang:      targetLang,
-		SkipFavorite: skipFav,
+		InLang:  srcLang,
+		OutLang: targetLang,
 	}
-	trresp, err := s.trSvc.Translate(&opts, trtext)
+	resp, err := s.trSvc.Detect(&opts, trtext)
 	if err != nil {
 		logrus.WithError(err).Error("argos failed")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	trresp := &TranslateResponse{TranslateOptions: &opts, Response: resp}
 	if trresp.DetectedLanguage.Language == "" {
 		trresp.DetectedLanguage.Language = srcLang // so it's available in the form
 	}
@@ -140,6 +132,35 @@ func (s *Server) translate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) newFavorite(res *TranslateResponse) *favorites.Favorite {
+	alts := translate.CanonicalizeTranslations(res.Response)
+	fav := favorites.Favorite{
+		Source:     res.Input,
+		Target:     alts,
+		SourceLang: res.InLang,
+		TargetLang: res.OutLang,
+	}
+	if res.DetectedLanguage.Language != "" {
+		fav.SourceLang = res.DetectedLanguage.Language
+	}
+
+	return &fav
+}
+
+// saveTranslationAsFavorite save the translation as a favorite
+func (s *Server) saveTranslationAsFavorite(res *TranslateResponse) error {
+	if s.db != nil {
+		_, err := s.db.AddFavorite(s.newFavorite(res))
+		if err != nil {
+			if !strings.Contains(err.Error(), "UNIQUE") {
+				return fmt.Errorf("error adding favorite: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+// FlashcardResponse data used in flashcard display form
 type FlashcardResponse struct {
 	QuizLanguage string `json:"quizLanguage"`
 	favorites.Favorite
@@ -181,6 +202,7 @@ func (s *Server) flashcardResponse(fav favorites.Favorite, values url.Values) Fl
 	return fcResp
 }
 
+// flashcards display a specific or random favorite
 func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	if s.db == nil {
 		logrus.Error("Database not defined for flashcards")
@@ -223,6 +245,31 @@ func (s *Server) flashcards(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// favoriteSave POST to save the current translation as a favorite
+func (s *Server) favoriteSaveNew(w http.ResponseWriter, r *http.Request) {
+	vars, _ := GetRequestParams(r)
+	data := vars.Get("form-data-json")
+	var res TranslateResponse
+	if err := json.Unmarshal([]byte(data), &res); err != nil {
+		logrus.WithError(err).Error("unmarshal favorite failed")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	/**
+	if err := s.saveTranslationAsFavorite(res.Input, &res); err != nil {
+		logrus.WithError(err).Error("save favorite failed")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	*/
+
+	_ = s.renderTemplate(w, "favoriteEditReq.gohtml", s.newFavorite(&res))
+}
+
+// favoriteEdit display the form to edit an existing favorite
+//  1. edit favorite by searching for ID/Name - favoritesImportReq (e.g. manage favorites)
+//     This should arguably be moved to support LIKE name with resulting list of matches to select before edit
+//  2. edit favorite of a known ID - flashcards, favoriteEditReq
 func (s *Server) favoriteEdit(w http.ResponseWriter, r *http.Request) {
 	vars, _ := GetRequestParams(r)
 	fid := vars.Get("fav") // id or 'source'
@@ -250,14 +297,14 @@ func (s *Server) favoriteEdit(w http.ResponseWriter, r *http.Request) {
 		fav, err = s.db.SelectFavoriteSource(source)
 	}
 	if err != nil {
-		logrus.WithError(err).Error("select failed")
-		w.WriteHeader(http.StatusBadRequest)
+		RespondError(w, http.StatusBadRequest, fmt.Errorf("%w; select failed", err))
 		return
 	}
 
 	_ = s.renderTemplate(w, "favoriteEditReq.gohtml", fav)
 }
 
+// favoriteEditSave save the favorite after modifications
 func (s *Server) favoriteEditSave(w http.ResponseWriter, r *http.Request) {
 	id, err := GetRequestVarUint(r, "id")
 	if err != nil {
@@ -265,11 +312,14 @@ func (s *Server) favoriteEditSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	infav, err := s.db.SelectFavorite(id)
-	if err != nil {
-		logrus.WithError(err).Error("select failed")
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	infav := &favorites.Favorite{}
+	if id != 0 { // if not new
+		infav, err = s.db.SelectFavorite(id)
+		if err != nil {
+			logrus.WithError(err).Error("select failed")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	values, _ := GetRequestParams(r)
@@ -311,23 +361,30 @@ func (s *Server) favoriteEditSave(w http.ResponseWriter, r *http.Request) {
 		fav.Target = fav.Target[0 : len(fav.Target)-1]
 	}
 
-	err = s.db.UpdateFavorite(&fav)
+	if fav.ID == 0 {
+		_, err = s.db.AddFavorite(&fav)
+	} else {
+		err = s.db.UpdateFavorite(&fav)
+	}
 	if err != nil {
-		logrus.WithError(err).Error("update failed")
-		w.WriteHeader(http.StatusInternalServerError)
+		RespondError(w, http.StatusInternalServerError, fmt.Errorf("%w; save/update failed", err))
+		return
 	}
 
 	fcResp := s.flashcardResponse(fav, values)
 	_ = s.renderTemplate(w, "flashcards.gohtml", fcResp)
 }
 
+// favorites display the form to edit or import favorites
 func (s *Server) favorites(w http.ResponseWriter, r *http.Request) {
 	_ = s.renderTemplate(w, "favoritesImportReq.gohtml", nil)
 }
 
+// favoritesDoImport translate a batch of words and save favorites
 func (s *Server) favoritesDoImport(w http.ResponseWriter, r *http.Request) {
 	values, _ := GetRequestParams(r)
 
+	// TODO detect using first one and remove radio buttons from form
 	data, ok := values["data"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
@@ -344,17 +401,21 @@ func (s *Server) favoritesDoImport(w http.ResponseWriter, r *http.Request) {
 		outlang = translate.Spanish
 	}
 	opts := translate.TranslateOptions{
-		InLang:       inlang,
-		OutLang:      outlang,
-		SkipFavorite: false,
+		InLang:  inlang,
+		OutLang: outlang,
 	}
 
 	respErrors := []string{}
 	// data is `lang` text to be translated per line of input - no multiline translated
 	scanner := bufio.NewScanner(bytes.NewBufferString(data[0]))
 	for scanner.Scan() {
-		_, err := s.trSvc.Translate(&opts, strings.Trim(scanner.Text(), " \t\r\n"))
+		src := strings.Trim(scanner.Text(), " \t\r\n")
+		resp, err := s.trSvc.Translate(&opts, src)
 		if err != nil {
+			respErrors = append(respErrors, err.Error())
+		}
+		trresp := TranslateResponse{TranslateOptions: &opts, Response: resp}
+		if err := s.saveTranslationAsFavorite(&trresp); err != nil {
 			respErrors = append(respErrors, err.Error())
 		}
 	}
@@ -362,6 +423,7 @@ func (s *Server) favoritesDoImport(w http.ResponseWriter, r *http.Request) {
 	_ = s.renderTemplate(w, "favoritesImportResp.gohtml", respErrors)
 }
 
+// favoriteDelete delete a favorite
 func (s *Server) favoriteDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := GetRequestVarUint(r, "id")
 	if err != nil {
@@ -438,8 +500,9 @@ func (s *Server) newRouter() error {
 	s.mux.Handle("/flashcard/{id}", l(http.HandlerFunc(s.flashcards))).Methods(http.MethodGet)
 	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favorites))).Methods(http.MethodGet)
 	s.mux.Handle("/favorites", l(http.HandlerFunc(s.favoritesDoImport))).Methods(http.MethodPost)
-	s.mux.Handle("/favorite/{id}/edit", l(http.HandlerFunc(s.favoriteEdit))).Methods(http.MethodGet)
+	s.mux.Handle("/favorite", l(http.HandlerFunc(s.favoriteSaveNew))).Methods(http.MethodPost)
 	s.mux.Handle("/favorite/edit", l(http.HandlerFunc(s.favoriteEdit))).Methods(http.MethodGet, http.MethodPost)
+	s.mux.Handle("/favorite/edit/{id}", l(http.HandlerFunc(s.favoriteEdit))).Methods(http.MethodGet)
 	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoriteEditSave))).Methods(http.MethodPut)
 	s.mux.Handle("/favorite/{id}", l(http.HandlerFunc(s.favoriteDelete))).Methods(http.MethodDelete)
 

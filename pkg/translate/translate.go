@@ -2,7 +2,6 @@ package translate
 
 import (
 	"errors"
-	"esptrans/pkg/favorites"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/url"
@@ -14,7 +13,6 @@ import (
 
 // Translate an instance of this service
 type Translate struct {
-	DB *favorites.DBService
 	LT *LTClient
 	argosAPIProc
 }
@@ -27,9 +25,8 @@ type argosAPIProc struct {
 }
 
 type TranslateOptions struct {
-	InLang       string
-	OutLang      string
-	SkipFavorite bool
+	InLang  string
+	OutLang string
 }
 
 func canonicalizeString(s string) string {
@@ -41,28 +38,6 @@ func canonicalizeString(s string) string {
 	s = strings.Trim(s, " \"\r\n")
 
 	return s
-}
-
-func (t *Translate) saveFavorite(opts *TranslateOptions, source string, res *Response) error {
-	if t.DB != nil {
-		alts := CanonicalizeTranslations(res)
-		fav := favorites.Favorite{
-			Source:     source,
-			Target:     alts,
-			SourceLang: opts.InLang,
-			TargetLang: opts.OutLang,
-		}
-		if res.DetectedLanguage.Language != "" {
-			fav.SourceLang = res.DetectedLanguage.Language
-		}
-		_, err := t.DB.AddFavorite(&fav)
-		if err != nil {
-			if !strings.Contains(err.Error(), "UNIQUE") {
-				return fmt.Errorf("error adding favorite: %w", err)
-			}
-		}
-	}
-	return nil
 }
 
 func CanonicalizeTranslations(res *Response) []string {
@@ -80,6 +55,26 @@ func CanonicalizeTranslations(res *Response) []string {
 	return alts
 }
 
+// Detect try to translate with both languages as source and take the results with the best confidence
+func (t *Translate) Detect(opts *TranslateOptions, sdata string) (*Response, error) {
+	t1, err := t.Translate(opts, sdata)
+	if err != nil {
+		return nil, err
+	}
+	o2 := TranslateOptions{InLang: opts.OutLang, OutLang: opts.InLang}
+	t2, err := t.Translate(&o2, sdata)
+	if err != nil {
+		return nil, err
+	}
+
+	// Confidence of zero is poor. The best of two confidences is the one with the value closer (but not equal to) to zero.
+	if t2.DetectedLanguage.Confidence > t1.DetectedLanguage.Confidence {
+		return t2, nil
+	} else {
+		return t1, nil
+	}
+}
+
 // Translate calls the LibreTranslate wrapper and saves to favorites
 func (t *Translate) Translate(opts *TranslateOptions, sdata string) (*Response, error) {
 	if len(sdata) == 0 {
@@ -92,11 +87,6 @@ func (t *Translate) Translate(opts *TranslateOptions, sdata string) (*Response, 
 		return nil, fmt.Errorf("Failed to translate: %w", err)
 	}
 
-	if !opts.SkipFavorite {
-		if err = t.saveFavorite(opts, sdata, res); err != nil {
-			return nil, err
-		}
-	}
 	return res, nil
 }
 
@@ -169,13 +159,6 @@ func (t *Translate) Close() error {
 	return nil
 }
 
-// WithDB a functional option to specify the favorites DB service to use
-func WithDB(db *favorites.DBService) func(*Translate) {
-	return func(t *Translate) {
-		t.DB = db
-	}
-}
-
 // WithAPIURL a functional option to specify where to run the Argos API
 func WithAPIURL(apiURL string) func(*Translate) {
 	return func(t *Translate) {
@@ -200,7 +183,6 @@ func WithoutArgos() func(*Translate) {
 // New creates a new instance of the translation API wrapper
 func New(options ...func(*Translate)) (*Translate, error) {
 	t := &Translate{
-		DB: nil,
 		LT: nil,
 		argosAPIProc: argosAPIProc{
 			scriptPath: "./argostranslate-api.py",

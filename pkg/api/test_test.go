@@ -200,7 +200,6 @@ func TestUI(t *testing.T) {
 		tsvc, err := translate.New(
 			translate.WithoutArgos(),
 			translate.WithAPIURL(ts.URL),
-			translate.WithDB(db),
 		)
 		So(err, ShouldBeNil)
 
@@ -214,9 +213,8 @@ func TestUI(t *testing.T) {
 		defer svr.Stop(ctx)
 
 		resp, err := tsvc.Translate(&translate.TranslateOptions{
-			InLang:       translate.English,
-			OutLang:      translate.Spanish,
-			SkipFavorite: true,
+			InLang:  translate.English,
+			OutLang: translate.Spanish,
 		},
 			"Hi")
 		So(err, ShouldBeNil)

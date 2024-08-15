@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"esptrans/pkg/favorites"
 	"esptrans/pkg/translate"
 	"github.com/sirupsen/logrus"
@@ -48,13 +49,23 @@ func (s *Server) tLangIsChecked(lang string, inLang string) template.HTMLAttr {
 	return attr
 }
 
+// tJsonTranslateData provide a translation response as a JSON  URL-encoded string
+func (s *Server) tJsonTranslateData(res *TranslateResponse) string {
+	data, err := json.Marshal(res)
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
 func (s *Server) LoadTemplates() error {
 	dir := s.cfg.StaticPages + "/templates"
 	t, err := template.New("template/").Funcs(template.FuncMap{
-		"sub":           s.tSub,
-		"trjoin":        s.tTranslationsJoin,
-		"favAltsJoin":   s.tFavAltsJoin,
-		"langIsChecked": s.tLangIsChecked,
+		"sub":               s.tSub,
+		"trjoin":            s.tTranslationsJoin,
+		"favAltsJoin":       s.tFavAltsJoin,
+		"langIsChecked":     s.tLangIsChecked,
+		"jsonTranslateData": s.tJsonTranslateData,
 	}).ParseGlob(dir + "/*.gohtml")
 	if err != nil {
 		return err

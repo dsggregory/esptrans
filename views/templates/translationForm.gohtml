@@ -2,33 +2,11 @@
 
 <div id="translation-body" class="">
     <form hx-post="/translate">
-        {{$lang := .DetectedLanguage.Language}}
-        {{if eq "" $lang}}
-            {{$lang = "en"}}
-        {{end}}
-        <div class="flex items-center">
-            <input type="checkbox" name="skipFav" value="true">
-            <label for="skipFav" class="">Don't save favorite</label>
-        </div>
-        <div class="flex items-center">
-            <div class="flex py-4 pr-2">
-               <b class="">Source language: </b>
-            </div>
-            <div class="flex py-4 px-2">
-                <input id="sourceEn" type="radio" {{langIsChecked $lang "en"}} name="srclang" value="en" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                <label for="sourceEn" class="">English</label>
-            </div>
-            <div class="flex py-4 px-2">
-                <input id="sourceEs" type="radio" {{langIsChecked $lang "es"}} name="srclang" value="es" class="text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                <label for="sourceEs" class="">Spanish</label>
-            </div>
-
-            <div class="flex px-4">
-                <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
-                        id="translate-button">
-                    Search
-                </button>
-            </div>
+        <div class="flex px-4">
+            <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
+                    id="translate-button">
+                Search
+            </button>
         </div>
 
         <div class="p-4" id="en">
@@ -48,6 +26,16 @@
                         <br/>
                     {{end}}
                     </ul>
+                </div>
+                <div class="flex px-4">
+                    <textarea name="form-data-json" style="display: none">
+                        {{jsonTranslateData .}}
+                    </textarea>
+                    <button class="bg-blue-700 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full" type="submit"
+                            id="sav-fav-button"
+                            hx-post="/favorite" hx-target="#main">
+                        Save favorite
+                    </button>
                 </div>
             {{end}}
         </div>
