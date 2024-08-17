@@ -154,7 +154,7 @@ func TestUI(t *testing.T) {
 		}()
 		fpo, err := os.Open("../../testdata/fixtures/favorites.db")
 		So(err, ShouldBeNil)
-		_, err = io.Copy(fpo, fp)
+		_, err = io.Copy(fp, fpo)
 		_ = fpo.Close()
 		_ = fp.Close()
 		So(err, ShouldBeNil)

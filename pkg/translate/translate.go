@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // Translate an instance of this service
@@ -55,24 +56,61 @@ func CanonicalizeTranslations(res *Response) []string {
 	return alts
 }
 
+// compare two strings ignoring case and punctuation
+func stringsResemble(a, b string) bool {
+	alen, blen := len(a), len(b)
+	i, j := 0, 0
+	for i < alen && j < blen {
+		if unicode.IsPunct(rune(a[i])) {
+			i++
+			continue
+		}
+		if unicode.IsPunct(rune(b[j])) {
+			j++
+			continue
+		}
+		if i >= alen || j >= blen { // too long
+			return false
+		}
+		if unicode.ToLower(rune(a[i])) != unicode.ToLower(rune(b[j])) {
+			return false
+		}
+		i++
+		j++
+	}
+	return true
+}
+
+func (t *Translate) tryDetect(opts *TranslateOptions, sdata string) (*Response, *Response, error) {
+	var t1, t2 *Response
+	var err error
+	t1, err = t.Translate(opts, sdata)
+	if err == nil {
+		o2 := TranslateOptions{InLang: opts.OutLang, OutLang: opts.InLang}
+		t2, err = t.Translate(&o2, sdata)
+		if err == nil {
+			return t1, t2, nil
+		}
+	}
+	return nil, nil, err
+}
+
+func (t *Translate) chooseDetection(t1, t2 *Response) *Response {
+	// Confidence seems to be misleading, so we check for the one that has a diff word for the translated text
+	if !stringsResemble(t2.TranslatedText, t2.Input) {
+		return t2
+	} else {
+		return t1
+	}
+}
+
 // Detect try to translate with both languages as source and take the results with the best confidence
 func (t *Translate) Detect(opts *TranslateOptions, sdata string) (*Response, error) {
-	t1, err := t.Translate(opts, sdata)
+	t1, t2, err := t.tryDetect(opts, sdata)
 	if err != nil {
 		return nil, err
 	}
-	o2 := TranslateOptions{InLang: opts.OutLang, OutLang: opts.InLang}
-	t2, err := t.Translate(&o2, sdata)
-	if err != nil {
-		return nil, err
-	}
-
-	// Confidence of zero is poor. The best of two confidences is the one with the value closer (but not equal to) to zero.
-	if t2.DetectedLanguage.Confidence > t1.DetectedLanguage.Confidence {
-		return t2, nil
-	} else {
-		return t1, nil
-	}
+	return t.chooseDetection(t1, t2), nil
 }
 
 // Translate calls the LibreTranslate wrapper and saves to favorites
